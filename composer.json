@@ -1,0 +1,21 @@
+{
+  "name": "newpoow/nex-framework",
+  "description": "A simple and efficient web framework written with PHP",
+  "license": "MIT",
+  "homepage": "https://github.com/newpoow/nex-framework",
+  "type": "library",
+  "authors": [
+    {
+      "name": "Ney Pinheiro",
+      "homepage": "https://github.com/newpoow"
+    }
+  ],
+  "keywords": [
+    "micro", "framework", "nex", "simple", "api", "rest", "mvc"
+  ],
+  "require": {
+    "php": "^7.2"
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
+}
