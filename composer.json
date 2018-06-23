@@ -16,6 +16,11 @@
   "require": {
     "php": "^7.2"
   },
+  "autoload": {
+    "psr-4": {
+      "Nex\\": "src/"
+    }
+  },
   "minimum-stability": "dev",
   "prefer-stable": true
 }
