@@ -53,8 +53,7 @@ class Resolver implements ResolverInterface
                 continue;
             }
 
-            if ($parameter->isOptional() || $parameter->allowsNull()) {
-                $parameters[$i] = null;
+            if ($parameter->isOptional()) {
                 continue;
             }
 
