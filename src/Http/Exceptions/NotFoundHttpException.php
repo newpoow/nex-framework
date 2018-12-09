@@ -33,7 +33,7 @@ class NotFoundHttpException extends HttpException
 
         parent::__construct(sprintf(
             "The requested URL '%s' was not found on this server.", $path
-        ), 404, $previous, $headers);
+        ), 404, $headers, $previous);
     }
 
     /**

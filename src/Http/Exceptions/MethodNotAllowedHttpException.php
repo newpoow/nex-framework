@@ -35,7 +35,7 @@ class MethodNotAllowedHttpException extends HttpException
         parent::__construct(sprintf(
             "The requested resource is not available for the HTTP method. Supported methods: '%s'.",
             $headers['Allow']
-        ), 405, $previous, $headers);
+        ), 405, $headers, $previous);
     }
 
     /**
