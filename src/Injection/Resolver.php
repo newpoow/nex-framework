@@ -15,6 +15,9 @@ namespace Nex\Injection;
 use Nex\Injection\Exceptions\ContainerException;
 use Nex\Standard\Injection\ResolverInterface;
 use Psr\Container\ContainerInterface;
+use ReflectionException;
+use ReflectionFunctionAbstract;
+use ReflectionParameter;
 
 /**
  * Parameter resolver for functions/methods.
@@ -39,17 +42,18 @@ class Resolver implements ResolverInterface
 
     /**
      * Get the parameters to be used by a function/method.
-     * @param \ReflectionFunctionAbstract $reflected
+     * @param ReflectionFunctionAbstract $reflected
      * @param array $primitives
      * @return array
+     * @throws ReflectionException
      */
-    public function resolveParameters(\ReflectionFunctionAbstract $reflected, array $primitives = []): array
+    public function resolveParameters(ReflectionFunctionAbstract $reflected, array $primitives = []): array
     {
         $parameters = array();
-        foreach ($reflected->getParameters() as $i => $parameter) {
+        foreach ($reflected->getParameters() as $index => $parameter) {
             $value = $this->getParameterValue($parameter, $primitives);
             if (!is_null($value)) {
-                $parameters[$i] = $value;
+                $parameters[$index] = $value;
                 continue;
             }
 
@@ -59,11 +63,11 @@ class Resolver implements ResolverInterface
 
             $where = $reflected->getName();
             if ($class = $parameter->getDeclaringClass()) {
-                $where = "{$class->getName()}::{$where}";
+                $where = "{$class->getName()}::{$where}()";
             }
 
             throw new ContainerException(sprintf(
-                "Identifier '%s' cannot be resolved in '%s'.", $parameter->getName(), $where
+                "Identifier '$%s' cannot be resolved in '%s'.", $parameter->getName(), $where
             ));
         }
         return $parameters;
@@ -74,11 +78,12 @@ class Resolver implements ResolverInterface
     ##----------------------------------------------##
     /**
      * Get the value to be used by the parameter.
-     * @param \ReflectionParameter $parameter
+     * @param ReflectionParameter $parameter
      * @param array $primitives
-     * @return mixed
+     * @return mixed|null
+     * @throws ReflectionException
      */
-    protected function getParameterValue(\ReflectionParameter $parameter, array $primitives)
+    protected function getParameterValue(ReflectionParameter $parameter, array $primitives)
     {
         $name = $parameter->getName();
         if (($value = $this->getFromPrimitives($name, $primitives)) !== null) {

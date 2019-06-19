@@ -13,11 +13,12 @@
 namespace Nex\Injection\Exceptions;
 
 use Psr\Container\ContainerExceptionInterface;
+use RuntimeException;
 
 /**
  * Exception caused when a dependency cannot be built.
  * @package Nex\Injection
  */
-class ContainerException extends \RuntimeException implements ContainerExceptionInterface
+class ContainerException extends RuntimeException implements ContainerExceptionInterface
 {
 }

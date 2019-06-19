@@ -18,6 +18,6 @@ use Psr\Container\NotFoundExceptionInterface;
  * Exception caused when no entries were found in the container.
  * @package Nex\Injection
  */
-class EntryNotFoundException extends \RuntimeException implements NotFoundExceptionInterface
+class EntryNotFoundException extends ContainerException implements NotFoundExceptionInterface
 {
 }

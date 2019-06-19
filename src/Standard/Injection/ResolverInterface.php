@@ -12,6 +12,9 @@
  */
 namespace Nex\Standard\Injection;
 
+use ReflectionException;
+use ReflectionFunctionAbstract;
+
 /**
  * Standardization of a parameter resolver.
  * @package Nex\Injection
@@ -20,9 +23,10 @@ interface ResolverInterface
 {
     /**
      * Get the parameters to be used by a function/method.
-     * @param \ReflectionFunctionAbstract $reflected
+     * @param ReflectionFunctionAbstract $reflected
      * @param array $primitives
      * @return array
+     * @throws ReflectionException
      */
-    public function resolveParameters(\ReflectionFunctionAbstract $reflected, array $primitives = []): array;
+    public function resolveParameters(ReflectionFunctionAbstract $reflected, array $primitives = []): array;
 }

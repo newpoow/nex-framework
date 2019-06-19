@@ -12,6 +12,7 @@
  */
 namespace Nex\Standard\Injection;
 
+use Closure;
 use Psr\Container\ContainerInterface;
 
 /**
@@ -48,10 +49,10 @@ interface InjectorInterface extends ContainerInterface
     /**
      * Extend an existing definition of an already defined type.
      * @param string $id
-     * @param \Closure $fn
+     * @param Closure $fn
      * @return InjectorInterface
      */
-    public function extend(string $id, \Closure $fn): InjectorInterface;
+    public function extend(string $id, Closure $fn): InjectorInterface;
 
     /**
      * Get a type from your alias, if any.

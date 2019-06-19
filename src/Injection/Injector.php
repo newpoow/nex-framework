@@ -13,22 +13,29 @@
  */
 namespace Nex\Injection;
 
+use ArrayAccess;
+use Closure;
 use Nex\Injection\Exceptions\ContainerException;
 use Nex\Injection\Exceptions\EntryNotFoundException;
 use Nex\Standard\Injection\InjectorInterface;
 use Nex\Standard\Injection\ResolverInterface;
+use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
+use ReflectionClass;
+use ReflectionException;
+use ReflectionFunction;
+use ReflectionMethod;
 
 /**
  * Dependency Injector.
  * @package Nex\Injection
  */
-class Injector implements \ArrayAccess, InjectorInterface
+class Injector implements ArrayAccess, InjectorInterface
 {
     /** @var string[] */
     protected $aliases = array();
-    /** @var null|ContainerInterface */
+    /** @var ContainerInterface|null */
     protected $container;
     /** @var array */
     protected $definitions = array();
@@ -44,16 +51,15 @@ class Injector implements \ArrayAccess, InjectorInterface
     ##----------------------------------------------##
     /**
      * Dependency Injector.
-     * @param null|ContainerInterface $container
+     * @param ContainerInterface|null $container
+     * @param ResolverInterface|null $resolver
      */
-    public function __construct(?ContainerInterface $container = null)
-    {
+    public function __construct(
+        ?ContainerInterface $container = null,
+        ?ResolverInterface $resolver = null
+    ) {
         $this->container = $container;
-        if ($container && $container->has(ResolverInterface::class)) {
-            $this->resolver = $container->get(ResolverInterface::class);
-        } else {
-            $this->resolver = new Resolver($this);
-        }
+        $this->resolver = $resolver ?? new Resolver($this);
     }
 
     /**
@@ -88,7 +94,7 @@ class Injector implements \ArrayAccess, InjectorInterface
         }
 
         $concrete = is_null($concrete) ? $id : $concrete;
-        if (!$concrete instanceof \Closure) {
+        if (!$concrete instanceof Closure) {
             $concrete = function () use ($concrete) {
                 if (is_string($concrete)) {
                     return $this->build($concrete);
@@ -112,17 +118,17 @@ class Injector implements \ArrayAccess, InjectorInterface
         try {
             if (is_array($fn)) {
                 list($class, $method) = $fn;
-                $reflected = new \ReflectionMethod($class, $method);
+                $reflected = new ReflectionMethod($class, $method);
             } else if (is_object($fn)) {
-                $reflected = new \ReflectionMethod($fn, '__invoke');
+                $reflected = new ReflectionMethod($fn, '__invoke');
             } else {
-                $reflected = new \ReflectionFunction($fn);
+                $reflected = new ReflectionFunction($fn);
             }
 
             return call_user_func_array($fn, $this->resolver->resolveParameters(
                 $reflected, $parameters
             ));
-        } catch (\ReflectionException $exception) {
+        } catch (ReflectionException $exception) {
             throw new ContainerException(
                 $exception->getMessage(), $exception->getCode(), $exception->getPrevious()
             );
@@ -132,10 +138,10 @@ class Injector implements \ArrayAccess, InjectorInterface
     /**
      * Extend an existing definition of an already defined type.
      * @param string $id
-     * @param \Closure $fn
+     * @param Closure $fn
      * @return InjectorInterface
      */
-    public function extend(string $id, \Closure $fn): InjectorInterface
+    public function extend(string $id, Closure $fn): InjectorInterface
     {
         $id = $this->getTypeFromAlias($id);
         if (!(isset($this->instances[$id]) || isset($this->definitions[$id]))) {
@@ -166,17 +172,22 @@ class Injector implements \ArrayAccess, InjectorInterface
     public function get($id)
     {
         try {
+            if ($this->isShared($id)) {
+                return $this->make($id);
+            }
+
             if (is_null($this->container)) {
                 throw new EntryNotFoundException(sprintf(
                     "No entry was found for '%s' identifier in the container.", $id
                 ));
             }
             return $this->container->get($id);
-        } catch (NotFoundExceptionInterface $exception) {
-            if ($this->isResolvable($id)) {
+        } catch (ContainerExceptionInterface $exception) {
+            if ($exception instanceof NotFoundExceptionInterface && $this->isResolvable($id)) {
                 return $this->make($id);
             }
-            throw $exception;
+
+            throw new ContainerException($exception->getMessage(), $exception->getCode(), $exception);
         }
     }
 
@@ -206,7 +217,7 @@ class Injector implements \ArrayAccess, InjectorInterface
      */
     public function has($id)
     {
-        return $this->container && $this->container->has($id) ?: $this->isResolvable($id);
+        return ($this->container && $this->container->has($id)) || $this->isResolvable($id);
     }
 
     /**
@@ -301,7 +312,7 @@ class Injector implements \ArrayAccess, InjectorInterface
         $this->resolving[$id] = true;
 
         try {
-            $reflected = new \ReflectionClass($id);
+            $reflected = new ReflectionClass($id);
             if (!$reflected->isInstantiable()) {
                 throw new ContainerException(sprintf(
                     "Target '%s' is not instantiable.", $id
@@ -316,7 +327,7 @@ class Injector implements \ArrayAccess, InjectorInterface
             return $reflected->newInstanceArgs(
                 $this->resolver->resolveParameters($constructor, $parameters)
             );
-        } catch (\ReflectionException $exception) {
+        } catch (ReflectionException $exception) {
             throw new ContainerException(
                 $exception->getMessage(), $exception->getCode(), $exception->getPrevious()
             );
@@ -333,25 +344,28 @@ class Injector implements \ArrayAccess, InjectorInterface
     protected function isResolvable(string $id): bool
     {
         $id = $this->getTypeFromAlias($id);
-        return isset($this->instances[$id]) || isset($this->definitions[$id]) || class_exists($id);
+        if (isset($this->instances[$id]) || isset($this->definitions[$id])) {
+            return true;
+        }
+        return !in_array($id, ['Closure']) && class_exists($id);
     }
 
     ##++++++++++++++++++++++++++++++++++++++++++++++##
-    ##              ARRAYACCESS METHODS             ##
+    ##              ARRAY ACCESS METHODS            ##
     ##----------------------------------------------##
     /**
      * Checks whether the given type can be constructed using array syntax.
-     * @param string $offset
+     * @param mixed $offset
      * @return bool
      */
-    public function offsetExists($offset)
+    public function offsetExists($offset): bool
     {
         return $this->has($offset);
     }
 
     /**
      * Get an element resolved by its identifier, using array syntax.
-     * @param string $offset
+     * @param mixed $offset
      * @return mixed
      */
     public function offsetGet($offset)
@@ -361,7 +375,7 @@ class Injector implements \ArrayAccess, InjectorInterface
 
     /**
      * Set a resolution for a particular type using array syntax.
-     * @param string $offset
+     * @param mixed $offset
      * @param mixed $value
      */
     public function offsetSet($offset, $value)
@@ -371,7 +385,7 @@ class Injector implements \ArrayAccess, InjectorInterface
 
     /**
      * Remove a resolved element using array syntax.
-     * @param string $offset
+     * @param mixed $offset
      */
     public function offsetUnset($offset)
     {
@@ -383,7 +397,7 @@ class Injector implements \ArrayAccess, InjectorInterface
     ##----------------------------------------------##
     /**
      * Get an element resolved by its identifier, dynamically.
-     * @param string $name
+     * @param mixed $name
      * @return mixed
      */
     public function __get($name)
@@ -393,7 +407,7 @@ class Injector implements \ArrayAccess, InjectorInterface
 
     /**
      * Set a resolution for a particular type, dynamically.
-     * @param string $name
+     * @param mixed $name
      * @param mixed $value
      */
     public function __set($name, $value)
