@@ -22,7 +22,7 @@ use Psr\Http\Message\ServerRequestInterface;
  * Web Application.
  * @package Nex
  */
-class Web extends Application
+class Web extends Kernel
 {
     use AwareTraits\LoadSettingsFromPackagesAwareTrait,
         AwareTraits\LoadSettingsFromApplicationAwareTrait,

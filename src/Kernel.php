@@ -21,7 +21,7 @@ use Psr\Container\ContainerInterface;
  * Core of the application.
  * @package Nex
  */
-abstract class Application
+abstract class Kernel
 {
     /** @var InjectorInterface */
     private $injector;
