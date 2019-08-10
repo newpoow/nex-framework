@@ -28,7 +28,7 @@ composer require newpoow/nex-framework
 
 All you need to start using the framework is to instantiate an application and define the access routes.
 ```php
-$app = new \Nex\Web();
+$app = new \Nex\Application();
 
 $app->drawRoutes(function () {
 
@@ -45,7 +45,7 @@ $app->run();
 
 Dependency injection allows you to standardize and centralize the way objects are constructed in your application.
 ```php
-$app = new \Nex\Web();
+$app = new \Nex\Application();
 
 $app->configure(function () {
 
