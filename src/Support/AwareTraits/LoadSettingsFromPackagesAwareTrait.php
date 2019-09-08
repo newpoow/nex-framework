@@ -14,6 +14,8 @@ namespace Nex\Support\AwareTraits;
 
 use Nex\Standard\ConfigurablePackageInterface;
 use Nex\Standard\Configuration\ConfiguratorInterface;
+use Nex\Standard\Injection\InjectorInterface;
+use Nex\Support\PackageManager;
 
 /**
  * Provides knowledge to load configurations into packages.
@@ -21,18 +23,19 @@ use Nex\Standard\Configuration\ConfiguratorInterface;
  */
 trait LoadSettingsFromPackagesAwareTrait
 {
-    use RegisterPackagesAwareTrait;
-
     /**
      * Load the settings defined in the packages.
+     * @param InjectorInterface $injector
      */
-    protected function loadSettingsFromPackages()
+    protected function loadSettingsFromPackages(InjectorInterface $injector)
     {
-        foreach ($this->getPackages(function ($package) {
+        $packageManager = $injector->get(PackageManager::class);
+
+        foreach ($packageManager->getPackages(function ($package) {
             return $package instanceof ConfigurablePackageInterface;
         }) as $package) {
             /** @var $package ConfigurablePackageInterface */
-            $package->defineSettings($this->getInjector()->get(ConfiguratorInterface::class));
+            $package->defineSettings($injector->get(ConfiguratorInterface::class));
         }
     }
 }

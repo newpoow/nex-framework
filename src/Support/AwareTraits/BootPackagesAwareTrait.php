@@ -12,23 +12,27 @@
  */
 namespace Nex\Support\AwareTraits;
 
+use Nex\Standard\Injection\InjectorInterface;
+use Nex\Support\PackageManager;
+
 /**
  * Provides knowledge to initialize packages.
  * @package Nex
  */
 trait BootPackagesAwareTrait
 {
-    use RegisterPackagesAwareTrait;
-
     /**
      * Initialize the packages registered in the application.
+     * @param InjectorInterface $injector
      */
-    protected function bootPackages()
+    protected function bootPackages(InjectorInterface $injector)
     {
-        foreach ($this->getPackages(function ($package) {
+        $packageManager = $injector->get(PackageManager::class);
+
+        foreach ($packageManager->getPackages(function ($package) {
             return method_exists($package, 'boot');
         }) as $package) {
-            $this->getInjector()->execute([$package, 'boot']);
+            $injector->execute([$package, 'boot']);
         }
     }
 }
