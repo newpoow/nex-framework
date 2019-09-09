@@ -12,6 +12,7 @@
  */
 namespace Nex;
 
+use Nex\Injection\Injector;
 use Nex\Standard\Http\RouterInterface;
 use Nex\Support\AwareTraits;
 use Psr\Container\ContainerInterface;
@@ -38,10 +39,12 @@ class Application extends Kernel
      */
     public function __construct(?ContainerInterface $container = null)
     {
-        parent::__construct($container);
+        parent::__construct(new Injector($container));
 
-        $this->addPackage(new Configuration\ConfigurationPackage());
-        $this->addPackage(new Http\HttpPackage());
+        $this->addPackages(
+            new Configuration\ConfigurationPackage(),
+            new Http\HttpPackage()
+        );
     }
 
     /**

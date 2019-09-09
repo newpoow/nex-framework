@@ -12,10 +12,10 @@
  */
 namespace Nex;
 
-use Nex\Injection\Injector;
+use Closure;
 use Nex\Standard\Injection\InjectorInterface;
 use Nex\Support\Facade;
-use Psr\Container\ContainerInterface;
+use Nex\Support\PackageManager;
 
 /**
  * Core of the application.
@@ -31,26 +31,40 @@ abstract class Kernel
     ##----------------------------------------------##
     /**
      * Application constructor.
-     * @param null|ContainerInterface $container
+     * @param InjectorInterface $injector
      */
-    public function __construct(?ContainerInterface $container = null)
+    public function __construct(InjectorInterface $injector)
     {
-        $this->injector = new Injector($container);
+        $this->injector = $injector;
         $this->bindAndRun($this->injector, function () {
-            /** @var InjectorInterface $injector */
+            /** @var $injector InjectorInterface */
             $injector = $this;
             $injector->instance(InjectorInterface::class, $injector);
+            $injector->singleton(PackageManager::class);
 
             Facade::setFacadeContainer($injector);
         });
     }
 
     /**
+     * Add packages to the application.
+     * @param mixed ...$packages
+     * @return static
+     */
+    public function addPackages(...$packages): self
+    {
+        $this->bindAndRun(PackageManager::class, function () use ($packages) {
+            $this->addPackages(...$packages);
+        });
+        return $this;
+    }
+
+    /**
      * Configure the application.
-     * @param \Closure $fn
+     * @param Closure $fn
      * @return mixed
      */
-    public function configure(\Closure $fn)
+    public function configure(Closure $fn)
     {
         return $this->bindAndRun($this->injector, $fn);
     }
@@ -69,12 +83,12 @@ abstract class Kernel
     ##----------------------------------------------##
     /**
      * Performs a function by including an object within its scope.
-     * @param \object|string $scope
-     * @param \Closure $fn
+     * @param mixed $scope
+     * @param Closure $fn
      * @param array $parameters
      * @return mixed
      */
-    protected function bindAndRun($scope, \Closure $fn, array $parameters = [])
+    protected function bindAndRun($scope, Closure $fn, array $parameters = [])
     {
         if (is_object($scope) || is_string($scope)) {
             $fn = $fn->bindTo(is_object($scope) ? $scope : $this->injector->get($scope));
@@ -87,8 +101,8 @@ abstract class Kernel
      */
     protected function initialize()
     {
-        foreach ($this->getAwareTraits() as $trait) {
-            $method = $this->getInitMethodFromTrait($trait);
+        foreach ($this->getAwareTraits() as $aware) {
+            $method = lcfirst($this->getInitMethodFromTrait($aware));
             if (is_callable([$this, $method])) {
                 call_user_func([$this, $method], $this->injector);
             }
