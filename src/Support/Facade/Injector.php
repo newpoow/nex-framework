@@ -12,6 +12,7 @@
  */
 namespace Nex\Support\Facade;
 
+use Closure;
 use Nex\Standard\Injection\InjectorInterface;
 use Nex\Support\Facade;
 
@@ -21,7 +22,7 @@ use Nex\Support\Facade;
  * @method static InjectorInterface alias(string $alias, string $type)
  * @method static InjectorInterface bind(string $id, $concrete = null, bool $shared = false)
  * @method static mixed execute(callable $fn, array $parameters = [])
- * @method static InjectorInterface extend(string $id, \Closure $fn)
+ * @method static InjectorInterface extend(string $id, Closure $fn)
  * @method static mixed get($id)
  * @method static string getTypeFromAlias(string $alias)
  * @method static bool has($id)

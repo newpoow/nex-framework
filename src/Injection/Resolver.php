@@ -52,12 +52,8 @@ class Resolver implements ResolverInterface
         $parameters = array();
         foreach ($reflected->getParameters() as $index => $parameter) {
             $value = $this->getParameterValue($parameter, $primitives);
-            if (!is_null($value)) {
+            if (!is_null($value) || $parameter->isOptional()) {
                 $parameters[$index] = $value;
-                continue;
-            }
-
-            if ($parameter->isOptional()) {
                 continue;
             }
 

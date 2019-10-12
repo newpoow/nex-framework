@@ -14,6 +14,7 @@
 namespace Nex\Support;
 
 use Psr\Container\ContainerInterface;
+use RuntimeException;
 
 /**
  * Implements base functionality for static "facade" classes.
@@ -68,7 +69,7 @@ abstract class Facade
     {
         $instance = static::getFacadeRoot();
         if (!$instance) {
-            throw new \RuntimeException('A facade root has not been set.');
+            throw new RuntimeException('A facade root has not been set.');
         }
         return $instance->{$name}(...$arguments);
     }
