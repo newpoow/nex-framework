@@ -12,23 +12,28 @@
  */
 namespace Nex\Filesystem\Iterators;
 
+use Closure;
+use FilterIterator;
+use Iterator;
+use OuterIterator;
+
 /**
  * Filter the search by applying anonymous functions.
  * @package Nex\Filesystem
  */
-class Filtrable extends \FilterIterator
+class Filterable extends FilterIterator
 {
-    /** @var \Closure */
+    /** @var Closure */
     protected $filter;
-    /** @var \Iterator */
+    /** @var Iterator */
     protected $iterator;
 
     /**
      * Filter for the iterator.
-     * @param \Iterator $iterator
-     * @param \Closure $filter
+     * @param Iterator $iterator
+     * @param Closure $filter
      */
-    public function __construct(\Iterator $iterator, \Closure $filter)
+    public function __construct(Iterator $iterator, Closure $filter)
     {
         $this->iterator = $iterator;
         $this->filter = $filter;
@@ -40,10 +45,10 @@ class Filtrable extends \FilterIterator
      * Check whether the current element of the iterator is acceptable
      * @return bool
      */
-    public function accept()
+    public function accept(): bool
     {
         $iterator = $this->iterator;
-        while ($iterator instanceof \OuterIterator) {
+        while ($iterator instanceof OuterIterator) {
             $iterator = $iterator->getInnerIterator();
         }
 

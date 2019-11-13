@@ -29,6 +29,7 @@ trait LoadSettingsFromPackagesAwareTrait
      */
     protected function loadSettingsFromPackages(InjectorInterface $injector)
     {
+        /** @var PackageManager $packageManager */
         $packageManager = $injector->get(PackageManager::class);
 
         foreach ($packageManager->getPackages(function ($package) {

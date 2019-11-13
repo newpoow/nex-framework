@@ -12,6 +12,7 @@
  */
 namespace Nex\Support\AwareTraits;
 
+use Closure;
 use Nex\Filesystem\Finder;
 use Nex\Standard\Configuration\ConfiguratorInterface;
 
@@ -23,10 +24,10 @@ trait LoadSettingsFromApplicationAwareTrait
 {
     /**
      * Configure the application.
-     * @param \Closure $fn
+     * @param Closure $fn
      * @return mixed
      */
-    abstract public function configure(\Closure $fn);
+    abstract public function configure(Closure $fn);
 
     /**
      * Path where configuration files should be found.
@@ -42,13 +43,13 @@ trait LoadSettingsFromApplicationAwareTrait
      */
     protected function loadSettingsFromApplication()
     {
-        $configuationPath = $this->getConfigurationPath();
-        if (empty($configuationPath)) return;
+        $configurationPath = $this->getConfigurationPath();
+        if (empty($configurationPath)) return;
 
-        $this->configure(function (ConfiguratorInterface $configurator) use ($configuationPath) {
-            foreach (Finder::create()->files()->in($configuationPath) as $file) {
+        $this->configure(function (ConfiguratorInterface $configurator) use ($configurationPath) {
+            foreach (Finder::create()->files()->in($configurationPath) as $file) {
                 $path = str_replace(DIRECTORY_SEPARATOR, '.', trim(
-                    str_replace($configuationPath, '', $file->getPath()), DIRECTORY_SEPARATOR
+                    str_replace($configurationPath, '', $file->getPath()), DIRECTORY_SEPARATOR
                 ));
 
                 $configurator->load([$path => $file->getRealPath()]);

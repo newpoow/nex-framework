@@ -27,6 +27,7 @@ trait BootPackagesAwareTrait
      */
     protected function bootPackages(InjectorInterface $injector)
     {
+        /** @var PackageManager $packageManager */
         $packageManager = $injector->get(PackageManager::class);
 
         foreach ($packageManager->getPackages(function ($package) {

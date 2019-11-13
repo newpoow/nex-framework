@@ -29,6 +29,7 @@ trait DrawRoutesOnPackagesAwareTrait
      */
     protected function drawRoutesOnPackages(InjectorInterface $injector)
     {
+        /** @var PackageManager $packageManager */
         $packageManager = $injector->get(PackageManager::class);
 
         foreach ($packageManager->getPackages(function ($package) {

@@ -20,7 +20,7 @@ use Nex\Standard\PackageInterface;
 
 /**
  * Package manager for application extension.
- * @package Nex\Support
+ * @package Nex
  */
 final class PackageManager
 {
