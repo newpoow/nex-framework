@@ -13,6 +13,7 @@
 namespace Nex\Http;
 
 use Psr\Http\Message\ResponseInterface;
+use RuntimeException;
 
 /**
  * Emits a Response to the PHP Server API.
@@ -94,7 +95,7 @@ class Emitter
         $sent = headers_sent($file, $line);
 
         if ($sent && !$this->isIgnoreHeaderSend()) {
-            throw new \RuntimeException(sprintf(
+            throw new RuntimeException(sprintf(
                 "Unable to emit response: Headers already sent in file '%s' on line '%s'.", $file, $line
             ));
         }

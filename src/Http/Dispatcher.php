@@ -16,6 +16,7 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use SplQueue;
 
 /**
  * Process a server request and produce a response.
@@ -23,7 +24,7 @@ use Psr\Http\Server\RequestHandlerInterface;
  */
 class Dispatcher implements RequestHandlerInterface
 {
-    /** @var \SplQueue */
+    /** @var SplQueue */
     protected $queue;
     /** @var callable */
     protected $callback;
@@ -35,18 +36,10 @@ class Dispatcher implements RequestHandlerInterface
      */
     public function __construct(callable $defaultHandler, array $middlewares = [])
     {
-        $this->queue = new \SplQueue();
+        $this->queue = new SplQueue();
         $this->callback = $defaultHandler;
 
-        array_map(function ($middleware) {
-            if (is_callable($middleware)) {
-                $middleware = new Server\Middleware($middleware);
-            } elseif (is_string($middleware)) {
-                $middleware = Server\Middleware::lazy($middleware);
-            }
-
-            $this->add($middleware);
-        }, $middlewares);
+        $this->addMiddlewares($middlewares);
     }
 
     /**
@@ -54,9 +47,28 @@ class Dispatcher implements RequestHandlerInterface
      * @param MiddlewareInterface $middleware
      * @return static
      */
-    public function add(MiddlewareInterface $middleware): self
+    public function addMiddleware(MiddlewareInterface $middleware): self
     {
         $this->queue->enqueue($middleware);
+        return $this;
+    }
+
+    /**
+     * Add multiple intermediate actions to the execution queue.
+     * @param array $middlewares
+     * @return static
+     */
+    public function addMiddlewares(array $middlewares): self
+    {
+        array_map(function ($middleware) {
+            if (is_callable($middleware)) {
+                $middleware = new Server\Middleware($middleware);
+            } elseif (is_string($middleware)) {
+                $middleware = Server\Middleware::lazy($middleware);
+            }
+
+            $this->addMiddleware($middleware);
+        }, $middlewares);
         return $this;
     }
 
