@@ -12,6 +12,7 @@
  */
 namespace Nex\Http\Message;
 
+use InvalidArgumentException;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UriInterface;
@@ -83,7 +84,7 @@ class Request extends Message implements RequestInterface
     public function withMethod($method)
     {
         if (!preg_match("/^[!#$%&'*+.^_`\|~0-9a-z-]+$/i", $method = strval($method))) {
-            throw new \InvalidArgumentException(sprintf(
+            throw new InvalidArgumentException(sprintf(
                 "The given method '%s' is not a valid HTTP method.", $method
             ));
         }
@@ -101,7 +102,7 @@ class Request extends Message implements RequestInterface
     public function withRequestTarget($requestTarget)
     {
         if (!preg_match('#\s#', $requestTarget = strval($requestTarget))) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 "The given request-target is not valid, cannot contain whitespace"
             );
         }

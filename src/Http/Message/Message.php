@@ -12,6 +12,7 @@
  */
 namespace Nex\Http\Message;
 
+use InvalidArgumentException;
 use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\StreamInterface;
 
@@ -162,7 +163,7 @@ abstract class Message implements MessageInterface
     public function withProtocolVersion($version)
     {
         if (!preg_match('/^\d(?:\.\d)?$/', $version = strval($version))) {
-            throw new \InvalidArgumentException(sprintf(
+            throw new InvalidArgumentException(sprintf(
                 "The given protocol version '%s' is not valid; use the format: <major>.<minor> numbering scheme",
                 $version
             ));
@@ -184,7 +185,7 @@ abstract class Message implements MessageInterface
     protected function normalizeHeaderName(string $header): string
     {
         if (!preg_match("@^[a-zA-Z0-9'`#$%&*+.^_|~!-]+$@", $header)) {
-            throw new \InvalidArgumentException(sprintf(
+            throw new InvalidArgumentException(sprintf(
                 "The given header name '%s' is not valid; must be an RFC 7230 compatible string.",
                 $header
             ));
@@ -200,7 +201,7 @@ abstract class Message implements MessageInterface
     protected function normalizeHeaderValues(array $headers): array
     {
         if (empty($headers)) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 "Header values must be an array of strings, cannot be an empty array."
             );
         }
@@ -208,11 +209,27 @@ abstract class Message implements MessageInterface
         return array_map(function (string $header) {
             if (preg_match("#(?:(?:(?<!\r)\n)|(?:\r(?!\n))|(?:\r\n(?![ \t])))#", $header)
                 || preg_match('/[^\x09\x0a\x0d\x20-\x7E\x80-\xFE]/', $header)) {
-                throw new \InvalidArgumentException(sprintf(
+                throw new InvalidArgumentException(sprintf(
                     "The given header value '%s' is not valid", $header
                 ));
             }
             return $header;
         }, array_values($headers));
+    }
+
+    /**
+     * Normalizes the given header name and values.
+     * @param array $headers
+     * @return array
+     */
+    protected function normalizeHeaders(array $headers): array
+    {
+        $normalized = array();
+        foreach ($headers as $header => $value) {
+            $normalized[$this->normalizeHeaderName($header)] = $this->normalizeHeaderValues(
+                is_array($value) ? $value : array($value)
+            );
+        }
+        return $normalized;
     }
 }

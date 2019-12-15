@@ -35,10 +35,10 @@ class ServerRequestFactory implements ServerRequestFactoryInterface
     }
 
     /**
-     * Creates the server request instance from superglobals variables.
+     * Creates the server request instance from super globals variables.
      * @return ServerRequestInterface
      */
-    public static function createfromGlobals(): ServerRequestInterface
+    public static function createFromGlobals(): ServerRequestInterface
     {
         $request = new ServerRequest($_SERVER, self::getUriFromServer());
         foreach (self::getHeadersFromServer() as $name => $value) {

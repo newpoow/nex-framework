@@ -12,6 +12,7 @@
  */
 namespace Nex\Http\Message;
 
+use InvalidArgumentException;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UploadedFileInterface;
@@ -29,7 +30,7 @@ class ServerRequest extends Request implements ServerRequestInterface
     protected $cookies = array();
     /** @var array */
     protected $files = array();
-    /** @var array|\object|null */
+    /** @var array|object|null */
     protected $data;
     /** @var array */
     protected $query = array();
@@ -40,7 +41,7 @@ class ServerRequest extends Request implements ServerRequestInterface
      * HTTP Request message on the server.
      * @param array $serverParameters
      * @param UriInterface|string $uri
-     * @param StreamInterface|string $body
+     * @param StreamInterface $body
      */
     public function __construct(array $serverParameters = [], $uri = '', ?StreamInterface $body = null)
     {
@@ -84,7 +85,7 @@ class ServerRequest extends Request implements ServerRequestInterface
 
     /**
      * Retrieve any parameters provided in the request body.
-     * @return array|\object|null
+     * @return array|object|null
      */
     public function getParsedBody()
     {
@@ -157,13 +158,13 @@ class ServerRequest extends Request implements ServerRequestInterface
 
     /**
      * Return an instance with the specified body parameters.
-     * @param array|\object|null $data
+     * @param array|object|null $data
      * @return static
      */
     public function withParsedBody($data)
     {
         if (!is_array($data) && !is_object($data) && !is_null($data)) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 "The given data is not valid, must be a array, a object or null."
             );
         }
@@ -194,7 +195,7 @@ class ServerRequest extends Request implements ServerRequestInterface
     {
         array_walk_recursive($uploadedFiles, function ($file) {
             if (!$file instanceof UploadedFileInterface) {
-                throw new \InvalidArgumentException("Invalid uploaded files structure");
+                throw new InvalidArgumentException("Invalid uploaded files structure");
             }
         });
 

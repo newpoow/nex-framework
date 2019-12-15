@@ -17,6 +17,7 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use RuntimeException;
 
 /**
  * Intermediate action, in the process of requesting and producing the response.
@@ -51,18 +52,17 @@ final class Middleware implements MiddlewareInterface
      * Create a new lazy middleware.
      * The $middleware identifier is not required to be a class name,
      * any string that refers to a container identifier can be used.
-     *
      * @param string $middleware
      * @return MiddlewareInterface
      */
     public static function lazy(string $middleware): MiddlewareInterface
     {
-        return new static(function (
+        return new Middleware(function (
             ServerRequestInterface $request, RequestHandlerInterface $handler
         ) use ($middleware) {
             $instance = Facade\Injector::get($middleware);
             if (!$instance instanceof MiddlewareInterface) {
-                throw new \RuntimeException(sprintf(
+                throw new RuntimeException(sprintf(
                     "The provided middleware '%s' is not an implementation of '%s'.",
                     is_object($middleware) ? get_class($middleware) : gettype($middleware),
                     MiddlewareInterface::class

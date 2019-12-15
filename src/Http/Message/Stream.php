@@ -12,7 +12,10 @@
  */
 namespace Nex\Http\Message;
 
+use InvalidArgumentException;
 use Psr\Http\Message\StreamInterface;
+use RuntimeException;
+use Throwable;
 
 /**
  * Data stream for display in the message.
@@ -37,7 +40,7 @@ class Stream implements StreamInterface
         }
 
         if (!is_resource($resource)) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 "Invalid stream resource; must be a string or resource."
             );
         }
@@ -85,11 +88,11 @@ class Stream implements StreamInterface
     public function getContents()
     {
         if (!$this->isReadable()) {
-            throw new \RuntimeException("Unable to read stream contents.");
+            throw new RuntimeException("Unable to read stream contents.");
         }
 
         if (false === ($content = stream_get_contents($this->resource))) {
-            throw new \RuntimeException("Unable to read remainder of the stream.");
+            throw new RuntimeException("Unable to read remainder of the stream.");
         }
         return $content;
     }
@@ -172,11 +175,11 @@ class Stream implements StreamInterface
     public function read($length)
     {
         if (!$this->isReadable()) {
-            throw new \RuntimeException("Cannot read from non-readable stream.");
+            throw new RuntimeException("Cannot read from non-readable stream.");
         }
 
         if (false === ($stream = fread($this->resource, intval($length)))) {
-            throw new \RuntimeException("Unable to read from the stream.");
+            throw new RuntimeException("Unable to read from the stream.");
         }
         return $stream;
     }
@@ -197,11 +200,11 @@ class Stream implements StreamInterface
     public function seek($offset, $whence = SEEK_SET)
     {
         if (!$this->isSeekable()) {
-            throw new \RuntimeException("Stream is not seekable.");
+            throw new RuntimeException("Stream is not seekable.");
         }
 
         if (0 !== fseek($this->resource, intval($offset), intval($whence))) {
-            throw new \RuntimeException(sprintf(
+            throw new RuntimeException(sprintf(
                 "Unable to seek to stream position '%s' with whence %s.",
                 $offset, var_export($whence, true)
             ));
@@ -215,11 +218,11 @@ class Stream implements StreamInterface
     public function tell()
     {
         if (!is_resource($this->resource)) {
-            throw new \RuntimeException("Stream is not resourceable.");
+            throw new RuntimeException("Stream is not resourceable.");
         }
 
         if (false === ($position = ftell($this->resource))) {
-            throw new \RuntimeException("Unable to get the stream pointer position.");
+            throw new RuntimeException("Unable to get the stream pointer position.");
         }
         return $position;
     }
@@ -232,11 +235,11 @@ class Stream implements StreamInterface
     public function write($string)
     {
         if (!$this->isWritable()) {
-            throw new \RuntimeException("Cannot write to a non-writable stream.");
+            throw new RuntimeException("Cannot write to a non-writable stream.");
         }
 
         if (false === ($stream = fwrite($this->resource, strval($string)))) {
-            throw new \RuntimeException("Unable to write to stream.");
+            throw new RuntimeException("Unable to write to stream.");
         }
         return $stream;
     }
@@ -252,7 +255,7 @@ class Stream implements StreamInterface
                 $this->rewind();
             }
             return $this->getContents();
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             /** ignore... */
         }
         return '';

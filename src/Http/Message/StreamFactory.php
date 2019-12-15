@@ -12,8 +12,10 @@
  */
 namespace Nex\Http\Message;
 
+use InvalidArgumentException;
 use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Http\Message\StreamInterface;
+use RuntimeException;
 
 /**
  * Data Stream Factory
@@ -40,13 +42,13 @@ class StreamFactory implements StreamFactoryInterface
     public function createStreamFromFile(string $filename, string $mode = 'r'): StreamInterface
     {
         if (empty($mode) || !in_array($mode[0], ['r', 'w', 'a', 'x', 'c'])) {
-            throw new \InvalidArgumentException(sprintf(
+            throw new InvalidArgumentException(sprintf(
                 "The mode '%s' is invalid.", $mode
             ));
         }
 
         set_error_handler(function () use ($filename) {
-            throw new \RuntimeException(sprintf(
+            throw new RuntimeException(sprintf(
                 "The file '%s' cannot be opened.", $filename
             ));
         });

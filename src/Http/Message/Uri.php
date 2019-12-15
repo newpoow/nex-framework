@@ -12,6 +12,7 @@
  */
 namespace Nex\Http\Message;
 
+use InvalidArgumentException;
 use Psr\Http\Message\UriInterface;
 
 /**
@@ -173,7 +174,7 @@ class Uri implements UriInterface
     public function withPath($path)
     {
         if (false !== stripos($path, '?') || false !== stripos($path, '#')) {
-            throw new \InvalidArgumentException(sprintf(
+            throw new InvalidArgumentException(sprintf(
                 "The path '%s' must not contain query parameters or hash fragment.", $path
             ));
         }
@@ -192,7 +193,7 @@ class Uri implements UriInterface
     {
         $port = !is_null($port) ? intval($port) : null;
         if (is_int($port) && ($port < 1 || $port > 65535)) {
-            throw new \InvalidArgumentException(sprintf(
+            throw new InvalidArgumentException(sprintf(
                 "Invalid port: '%s'. Must be a valid integer within TCP/UDP port range", $port
             ));
         }
@@ -210,7 +211,7 @@ class Uri implements UriInterface
     public function withQuery($query)
     {
         if (false !== stripos($query, '#')) {
-            throw new \InvalidArgumentException(sprintf(
+            throw new InvalidArgumentException(sprintf(
                 "The query '%s' must not contain hash fragment.", $query
             ));
         }
@@ -228,7 +229,7 @@ class Uri implements UriInterface
     public function withScheme($scheme)
     {
         if ($scheme && !preg_match('/^(?:[A-Za-z][0-9A-Za-z\+\-\.]*)?$/', $scheme)) {
-            throw new \InvalidArgumentException(sprintf(
+            throw new InvalidArgumentException(sprintf(
                 "The scheme '%s' is invalid.", $scheme
             ));
         }
@@ -325,7 +326,7 @@ class Uri implements UriInterface
     protected function parseUri(string $uri)
     {
         if (!is_array($parsed = parse_url($uri))) {
-            throw new \InvalidArgumentException(sprintf(
+            throw new InvalidArgumentException(sprintf(
                 "The source URI string appears to be malformed: '%s'.", $uri
             ));
         }

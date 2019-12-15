@@ -12,8 +12,10 @@
  */
 namespace Nex\Http\Message;
 
+use InvalidArgumentException;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UploadedFileInterface;
+use RuntimeException;
 
 /**
  * Represents values of a file uploaded through an HTTP Request.
@@ -59,7 +61,7 @@ class UploadedFile implements UploadedFileInterface
         ?string $mediaType = null
     ) {
         if (0 > $error || 8 < $error) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 "Invalid error status for UploadedFile; must be an UPLOAD_ERR_* constant."
             );
         }
@@ -114,7 +116,7 @@ class UploadedFile implements UploadedFileInterface
     public function getStream()
     {
         if (!$this->stream instanceof StreamInterface) {
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 "Cannot retrieve stream after it has already been moved."
             );
         }
@@ -128,7 +130,7 @@ class UploadedFile implements UploadedFileInterface
     public function moveTo($targetPath)
     {
         if (!($this->stream instanceof StreamInterface) || UPLOAD_ERR_OK !== $this->error) {
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 self::ERROR_MESSAGES[$this->error] ??
                 "The uploaded file cannot be moved due to an error or already moved."
             );
@@ -136,13 +138,13 @@ class UploadedFile implements UploadedFileInterface
 
         $folder = dirname($targetPath);
         if (!is_dir($folder) || !is_writable($folder)) {
-            throw new \InvalidArgumentException(sprintf(
+            throw new InvalidArgumentException(sprintf(
                 "The directory '%s' does not exists or is not writable.", $folder
             ));
         }
 
         set_error_handler(function () use ($targetPath) {
-            throw new \RuntimeException(sprintf(
+            throw new RuntimeException(sprintf(
                 "Uploaded file could not be moved to '%s'.", $targetPath
             ));
         });

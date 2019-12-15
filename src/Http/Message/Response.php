@@ -12,6 +12,7 @@
  */
 namespace Nex\Http\Message;
 
+use InvalidArgumentException;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
 
@@ -39,12 +40,7 @@ class Response extends Message implements ResponseInterface
     {
         $this->setStatusCode($code);
         $this->body = $body instanceof StreamInterface ? $body : new Stream($body);
-
-        foreach ($headers as $header => $value) {
-            $this->headers[$this->normalizeHeaderName($header)] = $this->normalizeHeaderValues(
-                is_array($value) ? $value : array($value)
-            );
-        }
+        $this->headers = $this->normalizeHeaders($headers);
     }
 
     /**
@@ -92,7 +88,7 @@ class Response extends Message implements ResponseInterface
     protected function setStatusCode(int $code): self
     {
         if (!is_int($code) || !($code >= 100 && $code <= 599)) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 "The given status-code is not valid, must be an integer between 100 and 599, inclusive."
             );
         }
