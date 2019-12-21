@@ -12,6 +12,8 @@
  */
 namespace Nex\Http\Exceptions;
 
+use Throwable;
+
 /**
  * Exception caused when the server could not find the requested resource.
  * @package Nex\Http
@@ -24,10 +26,10 @@ class NotFoundHttpException extends HttpException
     /**
      * The server could not find the requested resource.
      * @param string $path
-     * @param \Throwable|null $previous
+     * @param Throwable|null $previous
      * @param array $headers
      */
-    public function __construct(string $path, \Throwable $previous = null, array $headers = [])
+    public function __construct(string $path, Throwable $previous = null, array $headers = [])
     {
         $this->path = $path;
 
@@ -44,5 +46,4 @@ class NotFoundHttpException extends HttpException
     {
         return $this->path;
     }
-
 }

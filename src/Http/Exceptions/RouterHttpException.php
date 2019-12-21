@@ -12,6 +12,8 @@
  */
 namespace Nex\Http\Exceptions;
 
+use Throwable;
+
 /**
  * Exception caused when route executor encounters problems processing actions.
  * @package Nex\Http
@@ -22,9 +24,9 @@ class RouterHttpException extends HttpException
      * Router Http Exception constructor.
      * @param string $message
      * @param array $headers
-     * @param \Throwable|null $previous
+     * @param Throwable|null $previous
      */
-    public function __construct(string $message, array $headers = [], \Throwable $previous = null)
+    public function __construct(string $message, array $headers = [], Throwable $previous = null)
     {
         parent::__construct($message, 500, $headers, $previous);
     }

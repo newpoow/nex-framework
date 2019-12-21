@@ -13,12 +13,14 @@
 namespace Nex\Http\Exceptions;
 
 use Nex\Http\Message\StatusCode;
+use RuntimeException;
+use Throwable;
 
 /**
  * HTTP error exceptions.
  * @package Nex\Http
  */
-abstract class HttpException extends \RuntimeException
+abstract class HttpException extends RuntimeException
 {
     /** @var string[] */
     protected $headers = array();
@@ -28,9 +30,9 @@ abstract class HttpException extends \RuntimeException
      * @param string $message
      * @param int $code
      * @param array $headers
-     * @param \Throwable|null $previous
+     * @param Throwable|null $previous
      */
-    public function __construct(string $message = "", int $code = 500, array $headers = [], \Throwable $previous = null)
+    public function __construct(string $message = "", int $code = 500, array $headers = [], Throwable $previous = null)
     {
         $this->headers = $headers;
         if (!isset(StatusCode::HTTP_MESSAGES[$code])) $code = 500;

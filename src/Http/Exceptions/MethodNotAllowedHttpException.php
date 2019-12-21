@@ -12,6 +12,8 @@
  */
 namespace Nex\Http\Exceptions;
 
+use Throwable;
+
 /**
  * Exception caused when the http verb used is not supported.
  * @package Nex\Http
@@ -24,10 +26,10 @@ class MethodNotAllowedHttpException extends HttpException
     /**
      * The http verb used is not supported.
      * @param array $allowed
-     * @param \Throwable|null $previous
+     * @param Throwable|null $previous
      * @param array $headers
      */
-    public function __construct(array $allowed, \Throwable $previous = null, array $headers = [])
+    public function __construct(array $allowed, Throwable $previous = null, array $headers = [])
     {
         $this->allowedMethods = $allowed;
         $headers['Allow'] = strtoupper(implode(', ', $allowed));
