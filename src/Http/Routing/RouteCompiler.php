@@ -14,6 +14,7 @@
 namespace Nex\Http\Routing;
 
 use Nex\Standard\Http\RouteCompilerInterface;
+use RuntimeException;
 
 /**
  * Routes Compiler.
@@ -39,7 +40,7 @@ class RouteCompiler implements RouteCompilerInterface
         $uri = preg_replace_callback(self::REGEX_COMPILER, function ($matches) use ($patterns, $uri) {
             list($block, $pre, $type, $parameter, $optional) = $matches;
             if (!isset($patterns[$type])) {
-                throw new \RuntimeException(sprintf(
+                throw new RuntimeException(sprintf(
                     "Regular expression for '%s' in block '%s' of route '%s' has not been defined.",
                     $type, $block, $uri
                 ));
@@ -79,7 +80,7 @@ class RouteCompiler implements RouteCompilerInterface
                 return null;
             }
 
-            throw new \RuntimeException(sprintf(
+            throw new RuntimeException(sprintf(
                 "The required parameter '%s' in block '%s' of route '%s' has not been defined.",
                 $parameter, $block, $routeUri
             ));

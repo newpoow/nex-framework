@@ -12,6 +12,8 @@
  */
 namespace Nex\Http\Routing;
 
+use LogicException;
+
 /**
  * Route group with common attributes.
  * @package Nex\Http
@@ -57,7 +59,7 @@ class RouteGroup
         $cloned = clone $this;
         foreach ($attributes as $key => $attribute) {
             if (!is_string($key)) {
-                throw new \LogicException(
+                throw new LogicException(
                     "The characteristics of the route group must be an associative array."
                 );
             }
