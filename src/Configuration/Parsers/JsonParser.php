@@ -12,6 +12,7 @@
  */
 namespace Nex\Configuration\Parsers;
 
+use InvalidArgumentException;
 use Nex\Configuration\Exceptions\ParserException;
 use Nex\Standard\Configuration\ParserInterface;
 
@@ -22,6 +23,16 @@ use Nex\Standard\Configuration\ParserInterface;
 class JsonParser implements ParserInterface
 {
     /**
+     * Standardize data to be saved.
+     * @param array $data
+     * @return string
+     */
+    public function dump(array $data): string
+    {
+        return json_encode($data, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+    }
+
+    /**
      * Parse a file and get its contents.
      * @param string $file
      * @return array
@@ -29,7 +40,7 @@ class JsonParser implements ParserInterface
     public function parse(string $file): array
     {
         if (($path = realpath($file)) === false) {
-            throw new \InvalidArgumentException(sprintf(
+            throw new InvalidArgumentException(sprintf(
                 "Couldn't compute the absolute path of '%s'.", $file
             ));
         }
@@ -41,15 +52,5 @@ class JsonParser implements ParserInterface
             ));
         }
         return $content;
-    }
-
-    /**
-     * Standardize data to be saved.
-     * @param array $data
-     * @return string
-     */
-    public function dump(array $data): string
-    {
-        return json_encode($data, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
     }
 }

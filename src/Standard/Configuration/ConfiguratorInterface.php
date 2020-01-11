@@ -19,14 +19,6 @@ namespace Nex\Standard\Configuration;
 interface ConfiguratorInterface
 {
     /**
-     * Add a file parser.
-     * @param ParserInterface $parser
-     * @param array $extensions
-     * @return ConfiguratorInterface
-     */
-    public function addParser(ParserInterface $parser, array $extensions): ConfiguratorInterface;
-
-    /**
      * Get all settings loaded.
      * @return array
      */
@@ -39,13 +31,6 @@ interface ConfiguratorInterface
      * @return mixed
      */
     public function get(string $key, $default = null);
-
-    /**
-     * Get a parser for a file extension.
-     * @param string $extension
-     * @return ParserInterface
-     */
-    public function getParser(string $extension): ParserInterface;
 
     /**
      * Check if settings have been loaded.
@@ -62,23 +47,10 @@ interface ConfiguratorInterface
     public function load(...$files): ConfiguratorInterface;
 
     /**
-     * Remove data from settings.
-     * @param string|string[] ...$keys
-     */
-    public function remove(...$keys);
-
-    /**
-     * Save settings to files.
-     * @param string $file
-     * @param string|null $only
-     * @return ConfiguratorInterface
-     */
-    public function save(string $file, ?string $only = null): ConfiguratorInterface;
-
-    /**
      * Set data for settings.
      * @param string|array $key
      * @param mixed $value
+     * @return ConfiguratorInterface
      */
-    public function set($key, $value = null);
+    public function set($key, $value = null): ConfiguratorInterface;
 }

@@ -13,6 +13,7 @@ declare(strict_types=1);
  */
 namespace Nex\Configuration\Parsers;
 
+use InvalidArgumentException;
 use Nex\Configuration\Exceptions\ParserException;
 use Nex\Standard\Configuration\ParserInterface;
 use Nex\Standard\Injection\InjectorInterface;
@@ -36,6 +37,16 @@ class PhpParser implements ParserInterface
     }
 
     /**
+     * Standardize data to be saved.
+     * @param array $data
+     * @return string
+     */
+    public function dump(array $data): string
+    {
+        return "<?php\nreturn " . var_export($data, true) . ";";
+    }
+
+    /**
      * Parse a file and get its contents.
      * @param string $file
      * @return array
@@ -43,7 +54,7 @@ class PhpParser implements ParserInterface
     public function parse(string $file): array
     {
         if (($path = realpath($file)) === false) {
-            throw new \InvalidArgumentException(sprintf(
+            throw new InvalidArgumentException(sprintf(
                 "Couldn't compute the absolute path of '%s'.", $file
             ));
         }
@@ -59,15 +70,5 @@ class PhpParser implements ParserInterface
             ));
         }
         return $content;
-    }
-
-    /**
-     * Standardize data to be saved.
-     * @param array $data
-     * @return string
-     */
-    public function dump(array $data): string
-    {
-        return sprintf("<?php\nreturn %s;", var_export($data, true));
     }
 }

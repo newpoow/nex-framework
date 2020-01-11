@@ -19,16 +19,16 @@ namespace Nex\Standard\Configuration;
 interface ParserInterface
 {
     /**
-     * Parse a file and get its contents.
-     * @param string $file
-     * @return array
-     */
-    public function parse(string $file): array;
-
-    /**
      * Standardize data to be saved.
      * @param array $data
      * @return string
      */
     public function dump(array $data): string;
+
+    /**
+     * Parse a file and get its contents.
+     * @param string $file
+     * @return array
+     */
+    public function parse(string $file): array;
 }

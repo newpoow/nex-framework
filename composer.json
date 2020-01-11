@@ -8,8 +8,7 @@
     {
       "name": "Ney Pinheiro",
       "homepage": "https://github.com/newpoow"
-    },
-    {
+    }, {
       "name": "Gabba Pinheiro",
       "homepage": "https://github.com/gabbex"
     }
@@ -19,6 +18,7 @@
   ],
   "require": {
     "php": "^7.2",
+    "ext-json": "*",
     "psr/container": "^1.0",
     "psr/http-factory": "^1.0",
     "psr/http-message": "^1.0",

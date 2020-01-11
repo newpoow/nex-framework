@@ -12,10 +12,12 @@
  */
 namespace Nex\Configuration\Exceptions;
 
+use RuntimeException;
+
 /**
  * Exception caused when there are errors in the schema of the file being parsed.
  * @package Nex\Configuration
  */
-class ParserException extends \RuntimeException
+class ParserException extends RuntimeException
 {
 }

@@ -30,7 +30,7 @@ class ConfigurationPackage implements PackageInterface
     {
         $injector->alias('configurator', ConfiguratorInterface::class);
         $injector->singleton(ConfiguratorInterface::class, function (InjectorInterface $injector) {
-            $configurator = new Configurator();
+            $configurator = new Configurator([], '.');
             $configurator
                 ->addParser(new Parsers\JsonParser(), ['json'])
                 ->addParser(new Parsers\PhpParser($injector), ['php']);
