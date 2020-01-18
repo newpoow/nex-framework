@@ -12,6 +12,7 @@
  */
 namespace Nex\Http\Routing;
 
+use InvalidArgumentException;
 use Psr\Http\Server\MiddlewareInterface;
 
 /**
@@ -149,7 +150,7 @@ class Route
 
         foreach ($middlewares as $middleware) {
             if (!is_string($middleware) && !is_callable($middleware) && !$middleware instanceof MiddlewareInterface) {
-                throw new \InvalidArgumentException(sprintf(
+                throw new InvalidArgumentException(sprintf(
                     "Middleware provided for route '%s' is not valid.", $this->getUri()
                 ));
             }
@@ -232,7 +233,7 @@ class Route
         }
 
         if ((!is_callable($handler) && !is_array($handler)) || (is_array($handler) && count($handler) < 2)) {
-            throw new \InvalidArgumentException(sprintf(
+            throw new InvalidArgumentException(sprintf(
                 "The action format entered for route '%s' is not valid.", $this->getUri()
             ));
         }

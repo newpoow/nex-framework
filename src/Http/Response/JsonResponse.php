@@ -46,7 +46,7 @@ class JsonResponse extends Response
      * Encodes the data.
      * @param mixed $data
      * @param int $flags
-     * @return mixed
+     * @return false|string
      */
     protected function jsonEncode($data, int $flags)
     {

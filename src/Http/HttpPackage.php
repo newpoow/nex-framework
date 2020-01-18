@@ -24,7 +24,7 @@ use Psr\Http\Message\UriFactoryInterface;
 
 /**
  * Package for handling services with the hypertext transfer protocol.
- * @package Nex
+ * @package Nex\Http
  */
 class HttpPackage implements PackageInterface
 {

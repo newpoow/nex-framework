@@ -16,6 +16,7 @@
  */
 namespace Nex\Http\Routing;
 
+use Closure;
 use Nex\Http\Exceptions\MethodNotAllowedHttpException;
 use Nex\Http\Exceptions\NotFoundHttpException;
 use Nex\Http\Exceptions\RouterHttpException;
@@ -39,12 +40,10 @@ class Router implements RouterInterface
     protected $injector;
     /** @var RouteGroup[] */
     protected $groups = array();
-    /** @var array */
-    protected $middlewares = array();
     /** @var string[] */
     protected $patterns = array(
         '**' => '.+?', ## all
-        '*' => '[^/\.]++', ## / beetwen /
+        '*' => '[^/\.]++', ## / between /
         'i' => '[0-9]++', ## int
         'c' => '[A-Za-z]++', ## char
         'a' => '[0-9A-Za-z]++', ## alpha
@@ -56,6 +55,8 @@ class Router implements RouterInterface
     );
     /** @var Route[] */
     protected $routes = array();
+    /** @var RouteRunner */
+    protected $runner;
 
     ##++++++++++++++++++++++++++++++++++++++++++++++##
     ##                PUBLIC METHODS                ##
@@ -63,28 +64,17 @@ class Router implements RouterInterface
     /**
      * The router.
      * @param InjectorInterface $injector
+     * @param RouteCompilerInterface|null $compiler
+     * @param RouteRunner|null $runner
      */
-    public function __construct(InjectorInterface $injector)
-    {
+    public function __construct(
+        InjectorInterface $injector,
+        ?RouteCompilerInterface $compiler = null,
+        ?RouteRunner $runner = null
+    ) {
         $this->injector = $injector;
-        $this->compiler = $injector->has(RouteCompilerInterface::class) ?
-            $injector->get(RouteCompilerInterface::class) : new RouteCompiler();
-    }
-
-    /**
-     * Submit the request to the application.
-     * @param ServerRequestInterface $request
-     * @return ResponseInterface
-     */
-    public function dispatch(ServerRequestInterface $request): ResponseInterface
-    {
-        $route = $this->findRoute($request);
-        foreach ($route->getParameters() as $name => $parameter) {
-            $request = $request->withAttribute($name, $parameter);
-        }
-
-        $request = $request->withAttribute(Route::class, $route);
-        return (new RouteRunner($this->injector, $route->getHandler(), $this->gatherRouteMiddleware($route)))->handle($request);
+        $this->compiler = $compiler ?? new RouteCompiler();
+        $this->runner = $runner ?? new RouteRunner($injector);
     }
 
     /**
@@ -97,19 +87,15 @@ class Router implements RouterInterface
         $routes = $this->getRoutes(function (Route $route) use ($name) {
             return $route->getName() === $name;
         });
-
-        if (empty($routes)) {
-            return null;
-        }
-        return reset($routes);
+        return empty($routes) ? null : reset($routes);
     }
 
     /**
      * Gets a set of defined routes.
-     * @param \Closure|null $filter
+     * @param Closure|null $filter
      * @return array
      */
-    public function getRoutes(?\Closure $filter = null): array
+    public function getRoutes(?Closure $filter = null): array
     {
         if (is_null($filter)) {
             return $this->routes;
@@ -119,20 +105,21 @@ class Router implements RouterInterface
 
     /**
      * Define a route group with common attributes.
-     * @param array|null $attributes
-     * @param \Closure $fn
+     * @param array $attributes
+     * @param Closure $fn
+     * @return static
      */
-    public function group(?array $attributes = null, \Closure $fn)
+    public function group(array $attributes, Closure $fn): self
     {
-        if (!is_array($attributes)) $attributes = array();
-
         $group = !empty($this->groups) ? end($this->groups) : new RouteGroup();
         $this->groups[] = $group->withAttributes($attributes);
 
         $this->injector->execute($fn->bindTo($this), array(
-            Router::class => $this
+            get_class($this) => $this
         ));
+
         array_pop($this->groups);
+        return $this;
     }
 
     /**
@@ -140,17 +127,28 @@ class Router implements RouterInterface
      * @param string $name
      * @param array $middlewares
      * @param bool $replace
-     * @return Router
+     * @return static
      */
     public function groupMiddleware(string $name, array $middlewares, bool $replace = false): self
     {
-        if (!array_key_exists($name, $this->middlewares)) {
-            $this->middlewares[$name] = array();
+        $this->runner->groupMiddleware($name, $middlewares, $replace);
+        return $this;
+    }
+
+    /**
+     * Submit the request to the application.
+     * @param ServerRequestInterface $request
+     * @return ResponseInterface
+     */
+    public function handle(ServerRequestInterface $request): ResponseInterface
+    {
+        $route = $this->findRoute($request);
+        foreach ($route->getParameters() as $name => $parameter) {
+            $request = $request->withAttribute($name, $parameter);
         }
 
-        $this->middlewares[$name] = $replace ?
-            $middlewares : array_merge($this->middlewares[$name], $middlewares);
-        return $this;
+        $request = $request->withAttribute(Route::class, $route);
+        return $this->runner->run($route, $request);
     }
 
     /**
@@ -257,23 +255,6 @@ class Router implements RouterInterface
     }
 
     /**
-     * Prepare the intermediate actions to be executed.
-     * @param Route $route
-     * @return array
-     */
-    protected function gatherRouteMiddleware(Route $route): array
-    {
-        $middlewares = array();
-        foreach ($route->getMiddlewares() as $middleware) {
-            $middleware = is_string($middleware) && array_key_exists($middleware, $this->middlewares) ?
-                $this->middlewares[$middleware] : array($middleware);
-
-            $middlewares = array_merge($middlewares, $middleware);
-        }
-        return array_values(array_unique($middlewares, SORT_REGULAR));
-    }
-
-    /**
      * Sorts the routes for easy locating.
      * @param ServerRequestInterface $request
      * @return Route[]
@@ -282,7 +263,7 @@ class Router implements RouterInterface
     {
         ksort($this->routes);
         $routes = array_filter($this->routes, function ($key) use ($request) {
-            return preg_match("/^{$request->getMethod()}/", $key);
+            return preg_match("/^{$request->getMethod()}/", strval($key));
         }, ARRAY_FILTER_USE_KEY);
 
         return array_merge($routes, array_diff_key($this->routes, $routes));

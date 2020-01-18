@@ -12,11 +12,13 @@
  */
 namespace Nex\Http\Routing;
 
+use Closure;
+use JsonSerializable;
 use Nex\Http\Dispatcher;
 use Nex\Http\Exceptions\RouterHttpException;
 use Nex\Http\Message\Response;
+use Nex\Http\Response\JsonResponse;
 use Nex\Standard\Injection\InjectorInterface;
-use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -30,6 +32,8 @@ class RouteRunner extends Dispatcher
     protected $injector;
     /** @var callable */
     protected $handler;
+    /** @var array */
+    protected $groupMiddlewares = array();
 
     ##++++++++++++++++++++++++++++++++++++++++++++++##
     ##                PUBLIC METHODS                ##
@@ -37,15 +41,43 @@ class RouteRunner extends Dispatcher
     /**
      * Route executor.
      * @param InjectorInterface $injector
-     * @param callable|array $routeAction
-     * @param array $middlewares
      */
-    public function __construct(InjectorInterface $injector, $routeAction, array $middlewares = [])
+    public function __construct(InjectorInterface $injector)
     {
         $this->injector = $injector;
-        $this->handler = $this->prepareHandler($routeAction);
 
-        parent::__construct($this, array_merge($middlewares, $this->getControllerMiddleware()));
+        parent::__construct($this);
+    }
+
+    /**
+     * Set a name for a group of intermediate actions.
+     * @param string $name
+     * @param array $middlewares
+     * @param bool $replace
+     * @return static
+     */
+    public function groupMiddleware(string $name, array $middlewares, bool $replace = false): self
+    {
+        if (!array_key_exists($name, $this->groupMiddlewares)) {
+            $this->groupMiddlewares[$name] = array();
+        }
+
+        $this->groupMiddlewares[$name] = $replace ?
+            $middlewares : array_merge($this->groupMiddlewares[$name], $middlewares);
+        return $this;
+    }
+
+    /**
+     * Performs the action defined on the route.
+     * @param Route $route
+     * @param ServerRequestInterface $request
+     * @return ResponseInterface
+     */
+    public function run(Route $route, ServerRequestInterface $request): ResponseInterface
+    {
+        $this->handler = $this->prepareHandler($route->getHandler());
+
+        return $this->addMiddlewares($this->gatherRouteMiddleware($route))->handle($request);
     }
 
     /**
@@ -55,28 +87,37 @@ class RouteRunner extends Dispatcher
      */
     public function __invoke(ServerRequestInterface $request): ResponseInterface
     {
-        $request = $request->withAttribute(ServerRequestInterface::class, $request);
-        return $this->prepareResponse(
-            $this->injector->execute($this->handler, $request->getAttributes())
-        );
+        if (!is_callable($this->handler)) {
+            throw new RouterHttpException(sprintf(
+                "The action for the path '%s' has not been defined.", $request->getUri()->getPath()
+            ));
+        }
+
+        $this->injector->instance(ServerRequestInterface::class, $request);
+
+        return $this->prepareResponse($this->injector->execute(
+            $this->handler, $request->getAttributes()
+        ));
     }
 
     ##++++++++++++++++++++++++++++++++++++++++++++++##
     ##              PROTECTED METHODS               ##
     ##----------------------------------------------##
     /**
-     * Get the middleware for the route's controller.
+     * Prepare the intermediate actions to be executed.
+     * @param Route $route
      * @return array
      */
-    protected function getControllerMiddleware(): array
+    protected function gatherRouteMiddleware(Route $route): array
     {
-        if ($this->handler && is_array($this->handler)) {
-            list($controller, $method) = $this->handler;
-            if (method_exists($controller, 'getMiddleware')) {
-                return $controller->getMiddleware($method);
-            }
+        $middlewares = array();
+        foreach ($route->getMiddlewares() as $middleware) {
+            $middleware = is_string($middleware) && array_key_exists($middleware, $this->groupMiddlewares) ?
+                $this->groupMiddlewares[$middleware] : array($middleware);
+
+            $middlewares = array_merge($middlewares, $middleware);
         }
-        return array();
+        return array_values(array_unique($middlewares, SORT_REGULAR));
     }
 
     /**
@@ -108,7 +149,7 @@ class RouteRunner extends Dispatcher
             return array($controller, $method);
         }
 
-        return $handler instanceof \Closure ? $handler->bindTo($this->injector) : $handler;
+        return $handler instanceof Closure ? $handler->bindTo($this->injector) : $handler;
     }
 
     /**
@@ -122,31 +163,11 @@ class RouteRunner extends Dispatcher
             return $content;
         }
 
-        /** @var ResponseFactoryInterface $factory */
-        $factory = $this->injector->get(ResponseFactoryInterface::class);
-
-        if (is_array($content) || $content instanceof \JsonSerializable) {
-            $response = $factory->createResponse(200, 'OK');
-            $response->getBody()->write($this->jsonEncode($content));
-            return $response->withHeader("Content-Type", "application/json");
+        if (is_array($content) || $content instanceof JsonSerializable) {
+            return new JsonResponse($content);
         }
 
-        return new Response((string)$content, 200, ['Content-Type' => 'text/html']);
-    }
-
-    /**
-     * Convert content to JSON.
-     * @param mixed $content
-     * @return string
-     */
-    protected function jsonEncode($content): string
-    {
-        $json = json_encode($content);
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new \RuntimeException(sprintf(
-                "Unable to encode data to JSON in %s: '%s'.", __CLASS__, json_last_error_msg()
-            ));
-        }
-        return $json;
+        $content = is_resource($content) ? $content : strval($content);
+        return new Response($content, 200, ['Content-Type' => 'text/html']);
     }
 }
