@@ -12,12 +12,16 @@
  */
 namespace Nex;
 
+use Closure;
+use LogicException;
+use Nex\Http\Dispatcher;
 use Nex\Injection\Injector;
 use Nex\Standard\Http\RouterInterface;
 use Nex\Support\AwareTraits;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\RequestHandlerInterface;
 
 /**
  * Web Application.
@@ -30,29 +34,50 @@ class Application extends Kernel
         AwareTraits\BootPackagesAwareTrait,
         AwareTraits\DrawRoutesOnPackagesAwareTrait;
 
+    /** @var Dispatcher */
+    protected $dispatcher;
+
     ##++++++++++++++++++++++++++++++++++++++++++++++##
     ##                PUBLIC METHODS                ##
     ##----------------------------------------------##
     /**
      * Web Application.
-     * @param null|ContainerInterface $container
+     * @param ContainerInterface|null $container
      */
     public function __construct(?ContainerInterface $container = null)
     {
         parent::__construct(new Injector($container));
 
-        $this->addPackages(
+        $this->getInjector()->instance(Application::class, $this);
+        $this->dispatcher = new Dispatcher(function (ServerRequestInterface $request) {
+            return $this->dispatchToRouter($request);
+        });
+
+        $this->addPackages([
             new Configuration\ConfigurationPackage(),
             new Http\HttpPackage()
+        ]);
+    }
+
+    /**
+     * Add intermediate actions to run in the application.
+     * @param mixed ...$middleware
+     * @return static
+     */
+    public function addMiddleware(...$middleware): self
+    {
+        $this->dispatcher->addMiddlewares(
+            isset($middleware[0]) && is_array($middleware[0]) ? $middleware[0] : $middleware
         );
+        return $this;
     }
 
     /**
      * Define the application access routes.
-     * @param \Closure $fn
+     * @param Closure $fn
      * @return mixed
      */
-    public function drawRoutes(\Closure $fn)
+    public function drawRoutes(Closure $fn)
     {
         return $this->bindAndRun(RouterInterface::class, $fn);
     }
@@ -65,14 +90,13 @@ class Application extends Kernel
      */
     public function run(ServerRequestInterface $request = null, ?callable $finalHandler = null)
     {
+        $finalHandler = $finalHandler ?? new Http\Emitter();
+        $request = $request ?? Http\Message\ServerRequestFactory::createFromGlobals();
+
+        $this->getInjector()->instance(ServerRequestInterface::class, $request);
         $this->initialize();
 
-        $dispatcher = new Http\Dispatcher(function (ServerRequestInterface $request) {
-            return $this->dispatchToRouter($request);
-        });
-
-        $request = $request ?: Http\Message\ServerRequestFactory::createfromGlobals();
-        return call_user_func($finalHandler ?: new Http\Emitter(), $dispatcher->handle($request));
+        return call_user_func($finalHandler, $this->dispatcher->handle($request));
     }
 
     ##++++++++++++++++++++++++++++++++++++++++++++++##
@@ -86,11 +110,11 @@ class Application extends Kernel
     protected function dispatchToRouter(ServerRequestInterface $request): ResponseInterface
     {
         $router = $this->getInjector()->get(RouterInterface::class);
-        if (!$router instanceof RouterInterface) {
-            throw new \LogicException(sprintf(
-                "The provided router does not implement '%s'.", RouterInterface::class
+        if (!$router instanceof RequestHandlerInterface) {
+            throw new LogicException(sprintf(
+                "The provided Router does not implement '%s'.", RequestHandlerInterface::class
             ));
         }
-        return $router->dispatch($request);
+        return $router->handle($request);
     }
 }

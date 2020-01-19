@@ -16,7 +16,7 @@ use Nex\Standard\Injection\InjectorInterface;
 
 /**
  * Standardization of an extension package.
- * @package Nex\Standard
+ * @package Nex
  */
 interface PackageInterface
 {

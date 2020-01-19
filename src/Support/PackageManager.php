@@ -14,7 +14,6 @@ namespace Nex\Support;
 
 use Closure;
 use InvalidArgumentException;
-use Nex\Standard\DependsOnPackageInterface;
 use Nex\Standard\Injection\InjectorInterface;
 use Nex\Standard\PackageInterface;
 
@@ -50,7 +49,7 @@ final class PackageManager
         if (!array_key_exists($namePackage, $this->packages) || $replace) {
             $this->packages[$namePackage] = $package;
 
-            if ($package instanceof DependsOnPackageInterface) {
+            if (method_exists($package, 'getDependencies')) {
                 $this->addPackages($package->getDependencies());
             }
             $package->registerServices($this->injector);
