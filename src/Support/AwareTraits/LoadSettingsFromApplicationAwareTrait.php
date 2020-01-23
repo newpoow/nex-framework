@@ -33,10 +33,7 @@ trait LoadSettingsFromApplicationAwareTrait
      * Path where configuration files should be found.
      * @return string
      */
-    public function getConfigurationPath(): string
-    {
-        return '';
-    }
+    abstract public function getConfigurationPath(): string;
 
     /**
      * Load the settings defined in the application.

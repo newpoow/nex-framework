@@ -30,7 +30,6 @@ use Psr\Http\Server\RequestHandlerInterface;
 class Application extends Kernel
 {
     use AwareTraits\LoadSettingsFromPackagesAwareTrait,
-        AwareTraits\LoadSettingsFromApplicationAwareTrait,
         AwareTraits\BootPackagesAwareTrait,
         AwareTraits\DrawRoutesOnPackagesAwareTrait;
 

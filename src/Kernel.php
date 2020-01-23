@@ -13,18 +13,21 @@
 namespace Nex;
 
 use Closure;
+use InvalidArgumentException;
 use Nex\Standard\Injection\InjectorInterface;
+use Nex\Standard\PackageInterface;
 use Nex\Support\Facade;
-use Nex\Support\PackageManager;
 
 /**
- * Core of the application.
+ * Core of the application with package management.
  * @package Nex
  */
 abstract class Kernel
 {
     /** @var InjectorInterface */
     private $injector;
+    /** @var PackageInterface[] */
+    private $packages = array();
 
     ##++++++++++++++++++++++++++++++++++++++++++++++##
     ##                PUBLIC METHODS                ##
@@ -40,22 +43,55 @@ abstract class Kernel
             /** @var $injector InjectorInterface */
             $injector = $this;
             $injector->instance(InjectorInterface::class, $injector);
-            $injector->singleton(PackageManager::class);
 
             Facade::setFacadeContainer($injector);
         });
     }
 
     /**
-     * Add packages to the application.
+     * Add a package to the application.
+     * @param PackageInterface $package
+     * @param bool $replace
+     * @return static
+     */
+    public function addPackage(PackageInterface $package, bool $replace = false): self
+    {
+        $namePackage = get_class($package);
+        if (!array_key_exists($namePackage, $this->packages) || $replace) {
+            $this->packages[$namePackage] = $package;
+
+            if (method_exists($package, 'getDependencies')) {
+                $this->addPackages($package->getDependencies());
+            }
+            $package->registerServices($this->injector);
+        }
+        return $this;
+    }
+
+    /**
+     * Add multiple packages to the application.
      * @param mixed ...$packages
      * @return static
      */
     public function addPackages(...$packages): self
     {
-        $this->bindAndRun(PackageManager::class, function () use ($packages) {
-            $this->addPackages(...$packages);
-        });
+        $packages = isset($packages[0]) && is_array($packages[0]) ? $packages[0] : $packages;
+        foreach ($packages as $package => $options) {
+            if (!is_string($package)) {
+                $package = is_object($options) ? $options : $this->injector->get($options);
+            } else {
+                $package = $this->injector->make($package, $options);
+            }
+
+            if (!$package instanceof PackageInterface) {
+                $type = is_object($package) ? get_class($package) : gettype($package);
+
+                throw new InvalidArgumentException(sprintf(
+                    "The given package '%s' is not a instance of %s.", $type, PackageInterface::class
+                ));
+            }
+            $this->addPackage($package);
+        }
         return $this;
     }
 
@@ -76,6 +112,19 @@ abstract class Kernel
     public function getInjector(): InjectorInterface
     {
         return $this->injector;
+    }
+
+    /**
+     * Get the packages registered in the application.
+     * @param Closure|null $filter
+     * @return array
+     */
+    public function getPackages(?Closure $filter = null): array
+    {
+        if (is_null($filter)) {
+            return $this->packages;
+        }
+        return array_filter($this->packages, $filter, ARRAY_FILTER_USE_BOTH);
     }
 
     ##++++++++++++++++++++++++++++++++++++++++++++++##

@@ -12,10 +12,10 @@
  */
 namespace Nex\Support\AwareTraits;
 
+use Closure;
 use Nex\Standard\ConfigurablePackageInterface;
 use Nex\Standard\Configuration\ConfiguratorInterface;
 use Nex\Standard\Injection\InjectorInterface;
-use Nex\Support\PackageManager;
 
 /**
  * Provides knowledge to load configurations into packages.
@@ -24,15 +24,19 @@ use Nex\Support\PackageManager;
 trait LoadSettingsFromPackagesAwareTrait
 {
     /**
+     * Get the packages registered in the application.
+     * @param Closure|null $filter
+     * @return array
+     */
+    abstract public function getPackages(?Closure $filter = null): array;
+
+    /**
      * Load the settings defined in the packages.
      * @param InjectorInterface $injector
      */
     protected function loadSettingsFromPackages(InjectorInterface $injector)
     {
-        /** @var PackageManager $packageManager */
-        $packageManager = $injector->get(PackageManager::class);
-
-        foreach ($packageManager->getPackages(function ($package) {
+        foreach ($this->getPackages(function ($package) {
             return $package instanceof ConfigurablePackageInterface;
         }) as $package) {
             /** @var $package ConfigurablePackageInterface */
