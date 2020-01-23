@@ -12,12 +12,19 @@
  */
 namespace Nex\Standard\Http;
 
-use Psr\Http\Server\RequestHandlerInterface;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
 
 /**
  * Standardization of an access router.
  * @package Nex\Http
  */
-interface RouterInterface extends RequestHandlerInterface
+interface RouterInterface
 {
+    /**
+     * Submit the request to the application.
+     * @param ServerRequestInterface $request
+     * @return ResponseInterface
+     */
+    public function dispatch(ServerRequestInterface $request): ResponseInterface;
 }

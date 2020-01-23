@@ -109,11 +109,11 @@ class Application extends Kernel
     protected function dispatchToRouter(ServerRequestInterface $request): ResponseInterface
     {
         $router = $this->getInjector()->get(RouterInterface::class);
-        if (!$router instanceof RequestHandlerInterface) {
+        if (!$router instanceof RouterInterface) {
             throw new LogicException(sprintf(
-                "The provided Router does not implement '%s'.", RequestHandlerInterface::class
+                "The provided Router does not implement '%s'.", RouterInterface::class
             ));
         }
-        return $router->handle($request);
+        return $router->dispatch($request);
     }
 }

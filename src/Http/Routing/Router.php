@@ -140,7 +140,7 @@ class Router implements RouterInterface
      * @param ServerRequestInterface $request
      * @return ResponseInterface
      */
-    public function handle(ServerRequestInterface $request): ResponseInterface
+    public function dispatch(ServerRequestInterface $request): ResponseInterface
     {
         $route = $this->findRoute($request);
         foreach ($route->getParameters() as $name => $parameter) {

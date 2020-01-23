@@ -77,7 +77,6 @@ class Configurator implements ArrayAccess, ConfiguratorInterface, Countable, Ite
      */
     public function get(string $key, $default = null)
     {
-        /** @var mixed $data */
         $data = $this->items;
         if ($this->separator) {
             $key = explode($this->separator, rtrim($key, $this->separator));
