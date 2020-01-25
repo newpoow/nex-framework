@@ -15,7 +15,7 @@ namespace Nex\Http\Routing;
 use Closure;
 use JsonSerializable;
 use Nex\Http\Dispatcher;
-use Nex\Http\Exceptions\RouterHttpException;
+use Nex\Http\Exceptions\RouterException;
 use Nex\Http\Message\Response;
 use Nex\Http\Response\JsonResponse;
 use Nex\Standard\Injection\InjectorInterface;
@@ -88,7 +88,7 @@ class RouteRunner extends Dispatcher
     public function __invoke(ServerRequestInterface $request): ResponseInterface
     {
         if (!is_callable($this->handler)) {
-            throw new RouterHttpException(sprintf(
+            throw new RouterException(sprintf(
                 "The action for the path '%s' has not been defined.", $request->getUri()->getPath()
             ));
         }
@@ -133,7 +133,7 @@ class RouteRunner extends Dispatcher
 
             if (is_string($controller)) {
                 if (!$this->injector->has($controller)) {
-                    throw new RouterHttpException(sprintf(
+                    throw new RouterException(sprintf(
                         "The controller class '%s' has not been defined.", $controller
                     ));
                 }
@@ -141,7 +141,7 @@ class RouteRunner extends Dispatcher
             }
 
             if (!method_exists($controller, $method)) {
-                throw new RouterHttpException(sprintf(
+                throw new RouterException(sprintf(
                     "The controller class '%s' does not have a '%s' method.",
                     get_class($controller), $method
                 ));

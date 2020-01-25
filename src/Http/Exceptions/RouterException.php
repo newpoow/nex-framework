@@ -18,16 +18,16 @@ use Throwable;
  * Exception caused when route executor encounters problems processing actions.
  * @package Nex\Http
  */
-class RouterHttpException extends HttpException
+class RouterException extends HttpException
 {
     /**
-     * Router Http Exception constructor.
+     * Router Exception constructor.
      * @param string $message
-     * @param array $headers
+     * @param int $code
      * @param Throwable|null $previous
      */
-    public function __construct(string $message, array $headers = [], Throwable $previous = null)
+    public function __construct(string $message, int $code = 500, Throwable $previous = null)
     {
-        parent::__construct($message, 500, $headers, $previous);
+        parent::__construct($message, $code, $previous);
     }
 }

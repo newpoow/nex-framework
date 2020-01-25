@@ -22,41 +22,21 @@ use Throwable;
  */
 abstract class HttpException extends RuntimeException
 {
-    /** @var string[] */
-    protected $headers = array();
-
     /**
      * Http Exception constructor.
      * @param string $message
      * @param int $code
-     * @param array $headers
      * @param Throwable|null $previous
      */
-    public function __construct(string $message = "", int $code = 500, array $headers = [], Throwable $previous = null)
+    public function __construct(string $message = "", int $code = 500, Throwable $previous = null)
     {
-        $this->headers = $headers;
-        if (!isset(StatusCode::HTTP_MESSAGES[$code])) $code = 500;
+        if (!isset(StatusCode::HTTP_MESSAGES[$code])) {
+            $code = 500;
+        }
 
+        if (empty($message)) {
+            $message = StatusCode::HTTP_MESSAGES[$code];
+        }
         parent::__construct($message, $code, $previous);
-    }
-
-    /**
-     * Retrieves all header values.
-     * @return array
-     */
-    public function getHeaders(): array
-    {
-        return $this->headers;
-    }
-
-    /**
-     * Set response headers.
-     * @param array $headers
-     * @return HttpException
-     */
-    public function setHeaders(array $headers): self
-    {
-        $this->headers = $headers;
-        return $this;
     }
 }

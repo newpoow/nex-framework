@@ -19,7 +19,7 @@ namespace Nex\Http\Routing;
 use Closure;
 use Nex\Http\Exceptions\MethodNotAllowedHttpException;
 use Nex\Http\Exceptions\NotFoundHttpException;
-use Nex\Http\Exceptions\RouterHttpException;
+use Nex\Http\Exceptions\RouterException;
 use Nex\Standard\Http\RouteCompilerInterface;
 use Nex\Standard\Http\RouterInterface;
 use Nex\Standard\Injection\InjectorInterface;
@@ -191,7 +191,7 @@ class Router implements RouterInterface
     {
         $route = $this->getRouteByName($name);
         if (is_null($route)) {
-            throw new RouterHttpException(sprintf(
+            throw new RouterException(sprintf(
                 "No such route with name: '%s'.", $name
             ));
         }

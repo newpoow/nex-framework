@@ -27,17 +27,16 @@ class MethodNotAllowedHttpException extends HttpException
      * The http verb used is not supported.
      * @param array $allowed
      * @param Throwable|null $previous
-     * @param array $headers
      */
-    public function __construct(array $allowed, Throwable $previous = null, array $headers = [])
+    public function __construct(array $allowed, Throwable $previous = null)
     {
         $this->allowedMethods = $allowed;
-        $headers['Allow'] = strtoupper(implode(', ', $allowed));
-
-        parent::__construct(sprintf(
+        $message = sprintf(
             "The requested resource is not available for the HTTP method. Supported methods: '%s'.",
-            $headers['Allow']
-        ), 405, $headers, $previous);
+            strtoupper(implode(', ', $this->getAllowedMethods()))
+        );
+
+        parent::__construct($message, 405, $previous);
     }
 
     /**

@@ -27,15 +27,13 @@ class NotFoundHttpException extends HttpException
      * The server could not find the requested resource.
      * @param string $path
      * @param Throwable|null $previous
-     * @param array $headers
      */
-    public function __construct(string $path, Throwable $previous = null, array $headers = [])
+    public function __construct(string $path, Throwable $previous = null)
     {
         $this->path = $path;
+        $message = sprintf("The requested URL '%s' was not found on this server.", $this->getPath());
 
-        parent::__construct(sprintf(
-            "The requested URL '%s' was not found on this server.", $path
-        ), 404, $headers, $previous);
+        parent::__construct($message, 404, $previous);
     }
 
     /**
