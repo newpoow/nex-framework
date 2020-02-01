@@ -12,12 +12,8 @@
  */
 namespace Nex\Http\Routing;
 
-use Closure;
-use JsonSerializable;
 use Nex\Http\Dispatcher;
 use Nex\Http\Exceptions\RouterException;
-use Nex\Http\Message\Response;
-use Nex\Http\Response\JsonResponse;
 use Nex\Standard\Injection\InjectorInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -26,14 +22,12 @@ use Psr\Http\Message\ServerRequestInterface;
  * Executor of access routes and its intermediate actions.
  * @package Nex\Http
  */
-class RouteRunner extends Dispatcher
+class RouteRunner
 {
+    /** @var array */
+    protected $aliases = array();
     /** @var InjectorInterface */
     protected $injector;
-    /** @var callable */
-    protected $handler;
-    /** @var array */
-    protected $groupMiddlewares = array();
 
     ##++++++++++++++++++++++++++++++++++++++++++++++##
     ##                PUBLIC METHODS                ##
@@ -45,25 +39,22 @@ class RouteRunner extends Dispatcher
     public function __construct(InjectorInterface $injector)
     {
         $this->injector = $injector;
-
-        parent::__construct($this);
     }
 
     /**
      * Set a name for a group of intermediate actions.
-     * @param string $name
+     * @param string $alias
      * @param array $middlewares
      * @param bool $replace
      * @return static
      */
-    public function groupMiddleware(string $name, array $middlewares, bool $replace = false): self
+    public function aliasedMiddleware(string $alias, array $middlewares, bool $replace = false): self
     {
-        if (!array_key_exists($name, $this->groupMiddlewares)) {
-            $this->groupMiddlewares[$name] = array();
+        if (!array_key_exists($alias, $this->aliases)) {
+            $this->aliases[$alias] = array();
         }
 
-        $this->groupMiddlewares[$name] = $replace ?
-            $middlewares : array_merge($this->groupMiddlewares[$name], $middlewares);
+        $this->aliases[$alias] = $replace ? $middlewares : array_merge($this->aliases[$alias], $middlewares);
         return $this;
     }
 
@@ -75,29 +66,14 @@ class RouteRunner extends Dispatcher
      */
     public function run(Route $route, ServerRequestInterface $request): ResponseInterface
     {
-        $this->handler = $this->prepareHandler($route->getHandler());
+        $dispatcher = new Dispatcher(function (ServerRequestInterface $request) use ($route) {
+            $this->injector->instance(ServerRequestInterface::class, $request);
 
-        return $this->addMiddlewares($this->gatherRouteMiddleware($route))->handle($request);
-    }
+            return $route->getHandler()->handle($request);
+        });
 
-    /**
-     * Performs the action defined in the access route.
-     * @param ServerRequestInterface $request
-     * @return ResponseInterface
-     */
-    public function __invoke(ServerRequestInterface $request): ResponseInterface
-    {
-        if (!is_callable($this->handler)) {
-            throw new RouterException(sprintf(
-                "The action for the path '%s' has not been defined.", $request->getUri()->getPath()
-            ));
-        }
-
-        $this->injector->instance(ServerRequestInterface::class, $request);
-
-        return $this->prepareResponse($this->injector->execute(
-            $this->handler, $request->getAttributes()
-        ));
+        $dispatcher->addMiddlewares($this->gatherRouteMiddleware($route));
+        return $dispatcher->handle($request);
     }
 
     ##++++++++++++++++++++++++++++++++++++++++++++++##
@@ -112,62 +88,19 @@ class RouteRunner extends Dispatcher
     {
         $middlewares = array();
         foreach ($route->getMiddlewares() as $middleware) {
-            $middleware = is_string($middleware) && array_key_exists($middleware, $this->groupMiddlewares) ?
-                $this->groupMiddlewares[$middleware] : array($middleware);
-
+            if (is_string($middleware)) {
+                if (array_key_exists($middleware, $this->aliases)) {
+                    $middleware = $this->aliases[$middleware];
+                } elseif (class_exists($middleware)) {
+                    $middleware = [$middleware];
+                } else {
+                    throw new RouterException(sprintf(
+                        "No middleware groups were found with the name: '%s'.", $middleware
+                    ), 500);
+                }
+            }
             $middlewares = array_merge($middlewares, $middleware);
         }
         return array_values(array_unique($middlewares, SORT_REGULAR));
-    }
-
-    /**
-     * Prepare the action to be performed.
-     * @param callable|array $handler
-     * @return callable
-     */
-    protected function prepareHandler($handler): callable
-    {
-        if (is_array($handler)) {
-            $controller = $handler['controller'];
-            $method = $handler['method'];
-
-            if (is_string($controller)) {
-                if (!$this->injector->has($controller)) {
-                    throw new RouterException(sprintf(
-                        "The controller class '%s' has not been defined.", $controller
-                    ));
-                }
-                $controller = $this->injector->make($controller);
-            }
-
-            if (!method_exists($controller, $method)) {
-                throw new RouterException(sprintf(
-                    "The controller class '%s' does not have a '%s' method.",
-                    get_class($controller), $method
-                ));
-            }
-            return array($controller, $method);
-        }
-
-        return $handler instanceof Closure ? $handler->bindTo($this->injector) : $handler;
-    }
-
-    /**
-     * Create a response from the provided value.
-     * @param mixed $content
-     * @return ResponseInterface
-     */
-    protected function prepareResponse($content): ResponseInterface
-    {
-        if ($content instanceof ResponseInterface) {
-            return $content;
-        }
-
-        if (is_array($content) || $content instanceof JsonSerializable) {
-            return new JsonResponse($content);
-        }
-
-        $content = is_resource($content) ? $content : strval($content);
-        return new Response($content, 200, ['Content-Type' => 'text/html']);
     }
 }

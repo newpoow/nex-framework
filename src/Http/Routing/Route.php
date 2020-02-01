@@ -14,6 +14,7 @@ namespace Nex\Http\Routing;
 
 use InvalidArgumentException;
 use Psr\Http\Server\MiddlewareInterface;
+use Psr\Http\Server\RequestHandlerInterface;
 
 /**
  * Represents an access route.
@@ -21,12 +22,13 @@ use Psr\Http\Server\MiddlewareInterface;
  */
 class Route
 {
-    /** @var callable|array */
+    /** @var RequestHandlerInterface */
     protected $handler;
-    /** @var array|null */
-    protected $initialParameters;
     /** @var string[] */
     protected $methods = array();
+    /** @var string */
+    protected $uri;
+
     /** @var array */
     private $middlewares = array();
     /** @var string|null */
@@ -37,8 +39,6 @@ class Route
     protected $patterns = array();
     /** @var string|null */
     protected $regex;
-    /** @var string */
-    protected $uri;
 
     ##++++++++++++++++++++++++++++++++++++++++++++++##
     ##                PUBLIC METHODS                ##
@@ -47,31 +47,22 @@ class Route
      * The access route.
      * @param array $methods
      * @param string $uri
-     * @param callable|string|array $handler
+     * @param RequestHandlerInterface $handler
      */
-    public function __construct(array $methods, string $uri, $handler)
+    public function __construct(array $methods, string $uri, RequestHandlerInterface $handler)
     {
-        $this->setUri($uri);
         $this->setMethods($methods);
+        $this->setUri($uri);
         $this->setHandler($handler);
     }
 
     /**
      * Get the action of the route.
-     * @return callable|array
+     * @return RequestHandlerInterface
      */
-    public function getHandler()
+    public function getHandler(): RequestHandlerInterface
     {
         return $this->handler;
-    }
-
-    /**
-     * Get the list of original parameters for the route.
-     * @return array|null
-     */
-    public function getInitialParameters(): ?array
-    {
-        return $this->initialParameters;
     }
 
     /**
@@ -120,15 +111,6 @@ class Route
     }
 
     /**
-     * Get the URI for route access.
-     * @return string
-     */
-    public function getUri(): string
-    {
-        return $this->uri;
-    }
-
-    /**
      * Get the compiled version of the uri.
      * @return string|null
      */
@@ -138,11 +120,20 @@ class Route
     }
 
     /**
+     * Get the URI for route access.
+     * @return string
+     */
+    public function getUri(): string
+    {
+        return $this->uri;
+    }
+
+    /**
      * Defines the intermediate actions that must be performed if the route is matched.
      * @param mixed ...$middlewares
-     * @return Route
+     * @return static
      */
-    public function middleware(...$middlewares): Route
+    public function middleware(...$middlewares): self
     {
         if (count($middlewares) === 1 && is_array($middlewares[0])) {
             $middlewares = $middlewares[0];
@@ -162,9 +153,9 @@ class Route
     /**
      * Set a short name for the route.
      * @param string $name
-     * @return Route
+     * @return static
      */
-    public function name(string $name): Route
+    public function name(string $name): self
     {
         $this->name = $name;
         return $this;
@@ -173,7 +164,7 @@ class Route
     /**
      * Defines the compiled version of the uri.
      * @param string $regex
-     * @return Route
+     * @return static
      */
     public function setRegex(string $regex): self
     {
@@ -185,9 +176,9 @@ class Route
      * Define a regular expression, specific to the route.
      * @param string|array $name
      * @param string|null $pattern
-     * @return Route
+     * @return static
      */
-    public function where($name, ?string $pattern = null): Route
+    public function where($name, ?string $pattern = null): self
     {
         $wheres = is_array($name) ? $name : array($name => $pattern);
         foreach ($wheres as $name => $where) {
@@ -197,16 +188,12 @@ class Route
     }
 
     /**
-     * Add data used for access, such as parameters.
+     * Returns a new instance with the added data used for access, such as parameters.
      * @param array $parameters
      * @return Route
      */
     public function withParameters(array $parameters): Route
     {
-        if (is_null($this->initialParameters)) {
-            $this->initialParameters = $parameters;
-        }
-
         $cloned = clone $this;
         $cloned->parameters = array_merge($cloned->parameters, array_map(function ($value) {
             if (is_string($value)) {
@@ -222,26 +209,11 @@ class Route
     ##----------------------------------------------##
     /**
      * Defines the action to take when the route is matched.
-     * @param callable|string|array $handler
-     * @return Route
+     * @param RequestHandlerInterface $handler
+     * @return static
      */
-    protected function setHandler($handler): Route
+    protected function setHandler(RequestHandlerInterface $handler): self
     {
-        if (!is_callable($handler) && is_string($handler)) {
-            $handler = explode('@', str_replace(array(':'), '@', $handler), 2);
-            if (count($handler) == 1) $handler = array_merge($handler, array('__invoke'));
-        }
-
-        if ((!is_callable($handler) && !is_array($handler)) || (is_array($handler) && count($handler) < 2)) {
-            throw new InvalidArgumentException(sprintf(
-                "The action format entered for route '%s' is not valid.", $this->getUri()
-            ));
-        }
-
-        if (is_array($handler)) {
-            list($controller, $method) = $handler;
-            $handler = compact('controller', 'method');
-        }
         $this->handler = $handler;
         return $this;
     }
@@ -249,9 +221,9 @@ class Route
     /**
      * Defines the methods for route access.
      * @param array $methods
-     * @return Route
+     * @return static
      */
-    protected function setMethods(array $methods): Route
+    protected function setMethods(array $methods): self
     {
         $methods = array_map('strtoupper', $methods);
         if (in_array('GET', $methods) && !in_array('HEAD', $methods)) {
@@ -264,9 +236,9 @@ class Route
     /**
      * Defines the route access URI.
      * @param string $uri
-     * @return Route
+     * @return static
      */
-    protected function setUri(string $uri): Route
+    protected function setUri(string $uri): self
     {
         $this->uri = '/' . trim($uri, '/');
         return $this;

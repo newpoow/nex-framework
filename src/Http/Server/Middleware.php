@@ -57,18 +57,18 @@ final class Middleware implements MiddlewareInterface
      */
     public static function lazy(string $middleware): MiddlewareInterface
     {
-        return new Middleware(function (
-            ServerRequestInterface $request, RequestHandlerInterface $handler
-        ) use ($middleware) {
-            $instance = Facade\Injector::get($middleware);
-            if (!$instance instanceof MiddlewareInterface) {
-                throw new RuntimeException(sprintf(
-                    "The provided middleware '%s' is not an implementation of '%s'.",
-                    is_object($middleware) ? get_class($middleware) : gettype($middleware),
-                    MiddlewareInterface::class
-                ));
+        return new Middleware(
+            function (ServerRequestInterface $request, RequestHandlerInterface $handler) use ($middleware) {
+                $instance = Facade\Injector::get($middleware);
+                if (!$instance instanceof MiddlewareInterface) {
+                    throw new RuntimeException(sprintf(
+                        "The provided middleware '%s' is not an implementation of '%s'.",
+                        is_object($middleware) ? get_class($middleware) : gettype($middleware),
+                        MiddlewareInterface::class
+                    ));
+                }
+                return $instance->process($request, $handler);
             }
-            return $instance->process($request, $handler);
-        });
+        );
     }
 }

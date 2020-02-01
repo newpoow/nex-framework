@@ -25,6 +25,7 @@ use Nex\Standard\Http\RouterInterface;
 use Nex\Standard\Injection\InjectorInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\RequestHandlerInterface;
 
 /**
  * Router for application access.
@@ -36,10 +37,10 @@ class Router implements RouterInterface
 
     /** @var RouteCompilerInterface */
     protected $compiler;
-    /** @var InjectorInterface */
-    protected $injector;
     /** @var RouteGroup[] */
     protected $groups = array();
+    /** @var InjectorInterface */
+    protected $injector;
     /** @var string[] */
     protected $patterns = array(
         '**' => '.+?', ## all
@@ -73,8 +74,37 @@ class Router implements RouterInterface
         ?RouteRunner $runner = null
     ) {
         $this->injector = $injector;
-        $this->compiler = $compiler ?? new RouteCompiler();
-        $this->runner = $runner ?? new RouteRunner($injector);
+        $this->compiler = $compiler ?: new RouteCompiler();
+        $this->runner = $runner ?: new RouteRunner($injector);
+    }
+
+    /**
+     * Set a name for a group of intermediate actions.
+     * @param string $alias
+     * @param array $middlewares
+     * @param bool $replace
+     * @return static
+     */
+    public function aliasedMiddleware(string $alias, array $middlewares, bool $replace = false): self
+    {
+        $this->runner->aliasedMiddleware($alias, $middlewares, $replace);
+        return $this;
+    }
+
+    /**
+     * Submit the request to the application.
+     * @param ServerRequestInterface $request
+     * @return ResponseInterface
+     */
+    public function dispatch(ServerRequestInterface $request): ResponseInterface
+    {
+        $route = $this->findRoute($request);
+        foreach ($route->getParameters() as $name => $parameter) {
+            $request = $request->withAttribute($name, $parameter);
+        }
+
+        $request = $request->withAttribute(Route::class, $route);
+        return $this->runner->run($route, $request);
     }
 
     /**
@@ -111,7 +141,7 @@ class Router implements RouterInterface
      */
     public function group(array $attributes, Closure $fn): self
     {
-        $group = !empty($this->groups) ? end($this->groups) : new RouteGroup();
+        $group = empty($this->groups) ? new RouteGroup() : end($this->groups);
         $this->groups[] = $group->withAttributes($attributes);
 
         $this->injector->execute($fn->bindTo($this), array(
@@ -120,35 +150,6 @@ class Router implements RouterInterface
 
         array_pop($this->groups);
         return $this;
-    }
-
-    /**
-     * Set a name for a group of intermediate actions.
-     * @param string $name
-     * @param array $middlewares
-     * @param bool $replace
-     * @return static
-     */
-    public function groupMiddleware(string $name, array $middlewares, bool $replace = false): self
-    {
-        $this->runner->groupMiddleware($name, $middlewares, $replace);
-        return $this;
-    }
-
-    /**
-     * Submit the request to the application.
-     * @param ServerRequestInterface $request
-     * @return ResponseInterface
-     */
-    public function dispatch(ServerRequestInterface $request): ResponseInterface
-    {
-        $route = $this->findRoute($request);
-        foreach ($route->getParameters() as $name => $parameter) {
-            $request = $request->withAttribute($name, $parameter);
-        }
-
-        $request = $request->withAttribute(Route::class, $route);
-        return $this->runner->run($route, $request);
     }
 
     /**
@@ -165,7 +166,7 @@ class Router implements RouterInterface
      * Define access routes for specific methods.
      * @param array|string $methods
      * @param string $uri
-     * @param callable|string|array $action
+     * @param RequestHandlerInterface|callable|string|array $action
      * @return Route
      */
     public function map($methods, string $uri, $action): Route
@@ -174,7 +175,7 @@ class Router implements RouterInterface
             $methods = explode('|', str_replace(array(','), '|', $methods));
         }
 
-        $route = $this->createRoute($methods, $uri, $action);
+        $route = $this->createRoute($methods, $uri, $this->makeHandler($action));
         foreach ($route->getMethods() as $method) {
             $this->routes[$method.$route->getUri()] = $route;
         }
@@ -206,17 +207,17 @@ class Router implements RouterInterface
      * Create an instance of an access route.
      * @param array $methods
      * @param string $uri
-     * @param callable|string|array $action
+     * @param RequestHandlerInterface $handler
      * @return Route
      */
-    protected function createRoute(array $methods, string $uri, $action): Route
+    protected function createRoute(array $methods, string $uri, RequestHandlerInterface $handler): Route
     {
         if (empty($this->groups)) {
-            return new Route($methods, $uri, $action);
+            return new Route($methods, $uri, $handler);
         }
 
         $group = end($this->groups);
-        return $group->createRoute($methods, $uri, $action);
+        return $group->createRoute($methods, $uri, $handler);
     }
 
     /**
@@ -228,9 +229,11 @@ class Router implements RouterInterface
     {
         $allowed = array();
         foreach ($this->getSortedRoutes($request) as $route) {
-            $regex = $route->getRegex() ?: $route->setRegex(
-                $this->compiler->compile($route->getUri(), array_merge($this->patterns, $route->getPatterns()))
-            )->getRegex();
+            $regex = $route->getRegex();
+            if (is_null($regex)) {
+                $regex = $this->compiler->compile($route->getUri(), array_merge($this->patterns, $route->getPatterns()));
+                $route->setRegex($regex);
+            }
 
             if (!preg_match($regex, rawurldecode($request->getUri()->getPath()), $matches)) {
                 continue;
@@ -267,5 +270,18 @@ class Router implements RouterInterface
         }, ARRAY_FILTER_USE_KEY);
 
         return array_merge($routes, array_diff_key($this->routes, $routes));
+    }
+
+    /**
+     * Defines the action to take when the route is matched.
+     * @param RequestHandlerInterface|callable|string|array $action
+     * @return RequestHandlerInterface
+     */
+    protected function makeHandler($action): RequestHandlerInterface
+    {
+        if ($action instanceof RequestHandlerInterface) {
+            return $action;
+        }
+        return new RouteHandler($this->injector, $action);
     }
 }

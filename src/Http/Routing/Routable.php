@@ -12,6 +12,8 @@
  */
 namespace Nex\Http\Routing;
 
+use Psr\Http\Server\RequestHandlerInterface;
+
 /**
  * Defines the methods for creating access routes.
  * @package Nex\Http
@@ -22,7 +24,7 @@ trait Routable
      * Define access routes for specific methods.
      * @param array|string $methods
      * @param string $uri
-     * @param callable|string|array $action
+     * @param RequestHandlerInterface|callable|string|array $action
      * @return Route
      */
     abstract public function map($methods, string $uri, $action): Route;
@@ -30,7 +32,7 @@ trait Routable
     /**
      * Defines a route for access to all HTTP verbs.
      * @param string $uri
-     * @param callable|string|array $action
+     * @param RequestHandlerInterface|callable|string|array $action
      * @return Route
      */
     public function any(string $uri, $action): Route
@@ -41,7 +43,7 @@ trait Routable
     /**
      * Defines a route for access using the DELETE verb.
      * @param string $uri
-     * @param callable|string|array $action
+     * @param RequestHandlerInterface|callable|string|array $action
      * @return Route
      */
     public function delete(string $uri, $action): Route
@@ -52,7 +54,7 @@ trait Routable
     /**
      * Defines a route for access using the GET verb.
      * @param string $uri
-     * @param callable|string|array $action
+     * @param RequestHandlerInterface|callable|string|array $action
      * @return Route
      */
     public function get(string $uri, $action): Route
@@ -63,7 +65,7 @@ trait Routable
     /**
      * Defines a route for access using the OPTIONS verb.
      * @param string $uri
-     * @param callable|string|array $action
+     * @param RequestHandlerInterface|callable|string|array $action
      * @return Route
      */
     public function options(string $uri, $action): Route
@@ -74,7 +76,7 @@ trait Routable
     /**
      * Defines a route for access using the PATCH verb.
      * @param string $uri
-     * @param callable|string|array $action
+     * @param RequestHandlerInterface|callable|string|array $action
      * @return Route
      */
     public function patch(string $uri, $action): Route
@@ -85,7 +87,7 @@ trait Routable
     /**
      * Defines a route for access using the POST verb.
      * @param string $uri
-     * @param callable|string|array $action
+     * @param RequestHandlerInterface|callable|string|array $action
      * @return Route
      */
     public function post(string $uri, $action): Route
@@ -96,7 +98,7 @@ trait Routable
     /**
      * Defines a route for access using the PUT verb.
      * @param string $uri
-     * @param callable|string|array $action
+     * @param RequestHandlerInterface|callable|string|array $action
      * @return Route
      */
     public function put(string $uri, $action): Route

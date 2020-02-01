@@ -24,21 +24,21 @@ class JsonResponse extends Response
 {
     /**
      * Create a JSON response with the given data.
-     * @param string $body
+     * @param string $data
      * @param int $code
      * @param array $headers
      * @param int|string $flags
      */
     public function __construct(
-        $body = '',
+        $data = null,
         int $code = 200,
         array $headers = [],
         int $flags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES
     ) {
         parent::__construct(
-            $this->jsonEncode($body, $flags),
+            $this->jsonEncode($data, $flags),
             $code,
-            array_merge($headers, ['Content-Type' => 'application/json'])
+            array_merge(['Content-Type' => 'application/json'], $headers)
         );
     }
 

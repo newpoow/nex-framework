@@ -27,6 +27,8 @@ class RouteCompiler implements RouteCompilerInterface
 
     /**
      * Compile a route sequence for a regular expression.
+     *  e.g.: $rc->compile("/users/{i:id}", ['i' => '[0-9]++']);
+     *
      * @param string $routeUri
      * @param array $patterns
      * @return string
@@ -64,6 +66,8 @@ class RouteCompiler implements RouteCompilerInterface
 
     /**
      * Construct a URI using a route sequence and parameters.
+     *  e.g.: $rc->reverse("/users/{i:id}", ['id' => '10']);
+     *
      * @param string $routeUri
      * @param array $parameters
      * @return string

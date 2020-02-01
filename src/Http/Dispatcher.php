@@ -12,6 +12,7 @@
  */
 namespace Nex\Http;
 
+use InvalidArgumentException;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -24,22 +25,19 @@ use SplQueue;
  */
 class Dispatcher implements RequestHandlerInterface
 {
-    /** @var SplQueue */
-    protected $queue;
     /** @var callable */
     protected $callback;
+    /** @var SplQueue */
+    protected $queue;
 
     /**
      * Dispatcher of requisitions.
      * @param callable $defaultHandler
-     * @param MiddlewareInterface[] $middlewares
      */
-    public function __construct(callable $defaultHandler, array $middlewares = [])
+    public function __construct(callable $defaultHandler)
     {
         $this->queue = new SplQueue();
         $this->callback = $defaultHandler;
-
-        $this->addMiddlewares($middlewares);
     }
 
     /**
@@ -61,14 +59,20 @@ class Dispatcher implements RequestHandlerInterface
     public function addMiddlewares(array $middlewares): self
     {
         array_map(function ($middleware) {
-            if (is_callable($middleware)) {
-                $middleware = new Server\Middleware($middleware);
-            } elseif (is_string($middleware)) {
-                $middleware = Server\Middleware::lazy($middleware);
+            if (!$middleware instanceof MiddlewareInterface) {
+                if (is_callable($middleware)) {
+                    $middleware = new Server\Middleware($middleware);
+                } elseif (is_string($middleware)) {
+                    $middleware = Server\Middleware::lazy($middleware);
+                } else {
+                    throw new InvalidArgumentException(sprintf(
+                        "The value provided is not an implementation of '%s'.",MiddlewareInterface::class
+                    ));
+                }
             }
-
             $this->addMiddleware($middleware);
         }, $middlewares);
+
         return $this;
     }
 

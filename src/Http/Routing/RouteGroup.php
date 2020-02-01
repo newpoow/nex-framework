@@ -13,6 +13,7 @@
 namespace Nex\Http\Routing;
 
 use LogicException;
+use Psr\Http\Server\RequestHandlerInterface;
 
 /**
  * Route group with common attributes.
@@ -21,7 +22,7 @@ use LogicException;
 class RouteGroup
 {
     /** @var array */
-    private $middleware = array();
+    protected $middleware = array();
     /** @var string */
     protected $namespace;
     /** @var string[] */
@@ -36,17 +37,20 @@ class RouteGroup
      * Create an instance of an access route.
      * @param array $methods
      * @param string $uri
-     * @param callable|string|array $action
+     * @param RequestHandlerInterface $handler
      * @return Route
      */
-    public function createRoute(array $methods, string $uri, $action): Route
+    public function createRoute(array $methods, string $uri, RequestHandlerInterface $handler): Route
     {
-        if (!is_callable($action) && isset($this->namespace)) {
-            $action = $this->prependGroupNamespace($action);
+        if ($this->namespace && $handler instanceof RouteHandler) {
+            $handler = $handler->withPrependedNamespace($this->namespace);
         }
 
-        $route = new Route($methods, $this->prefix($uri), $action);
-        return $route->where($this->patterns)->middleware($this->middleware);
+        $route = new Route($methods, $this->prependPrefix($uri), $handler);
+        $route->where($this->patterns);
+        $route->middleware($this->middleware);
+
+        return $route;
     }
 
     /**
@@ -75,11 +79,24 @@ class RouteGroup
     ##              PROTECTED METHODS               ##
     ##----------------------------------------------##
     /**
+     * Prefix the given URI with the group prefix.
+     * @param string $uri
+     * @return string
+     */
+    protected function prependPrefix(string $uri): string
+    {
+        if (is_string($this->prefix)) {
+            $uri = rtrim($this->prefix, '/') . '/' . trim($uri, '/');
+        }
+        return $uri;
+    }
+
+    /**
      * Set the intermediate actions, which will be common in the routes.
      * @param mixed ...$middlewares
-     * @return RouteGroup
+     * @return static
      */
-    protected function setMiddleware(...$middlewares): RouteGroup
+    protected function setMiddleware(...$middlewares): self
     {
         if (isset($middlewares[0]) && is_array($middlewares[0])) {
             $middlewares = $middlewares[0];
@@ -92,41 +109,11 @@ class RouteGroup
     }
 
     /**
-     * Prefix the given URI with the group prefix.
-     * @param string $uri
-     * @return string
-     */
-    protected function prefix(string $uri): string
-    {
-        if (is_string($this->prefix)) {
-            $uri = rtrim($this->prefix, '/') . '/' . trim($uri, '/');
-        }
-        return $uri;
-    }
-
-    /**
-     * Prepend the last group namespace onto the action.
-     * @param array|string $action
-     * @return array|string
-     */
-    protected function prependGroupNamespace($action)
-    {
-        if (is_array($action) && is_string(reset($action))) {
-            $action = strval(array_shift($action)) . '@' . strval(array_shift($action));
-        }
-
-        if (is_string($action) && strpos($action, '\\') !== 0) {
-            $action = strval($this->namespace) . '\\' . $action;
-        }
-        return $action;
-    }
-
-    /**
      * Set a namespace, common in the routes.
-     * @param string|null $namespace
-     * @return RouteGroup
+     * @param string $namespace
+     * @return static
      */
-    protected function setNamespace(?string $namespace): RouteGroup
+    protected function setNamespace(string $namespace): self
     {
         if ($namespace && strpos($namespace, '\\') !== 0 && !is_null($this->namespace)) {
             $namespace = rtrim($this->namespace, '\\') . '\\' . trim($namespace, '\\');
@@ -138,9 +125,9 @@ class RouteGroup
     /**
      * Set a prefix for the URI, common on routes.
      * @param string $prefix
-     * @return RouteGroup
+     * @return static
      */
-    protected function setPrefix(string $prefix): RouteGroup
+    protected function setPrefix(string $prefix): self
     {
         if (is_string($this->prefix)) {
             $prefix = rtrim($this->prefix, '/') . '/' . trim($prefix, '/');
@@ -152,12 +139,12 @@ class RouteGroup
 
     /**
      * Set the regular expressions, common in the routes.
-     * @param array $wheres
-     * @return RouteGroup
+     * @param string[] $patterns
+     * @return static
      */
-    protected function setWhere(array $wheres): RouteGroup
+    protected function setWhere(array $patterns): self
     {
-        $this->patterns = array_merge($this->patterns, $wheres);
+        $this->patterns = array_merge($this->patterns, $patterns);
         return $this;
     }
 }
