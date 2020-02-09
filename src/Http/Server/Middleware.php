@@ -63,7 +63,7 @@ final class Middleware implements MiddlewareInterface
                 if (!$instance instanceof MiddlewareInterface) {
                     throw new RuntimeException(sprintf(
                         "The provided middleware '%s' is not an implementation of '%s'.",
-                        is_object($middleware) ? get_class($middleware) : gettype($middleware),
+                        is_object($instance) ? get_class($instance) : gettype($instance),
                         MiddlewareInterface::class
                     ));
                 }

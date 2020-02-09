@@ -91,15 +91,15 @@ class RouteRunner
             if (is_string($middleware)) {
                 if (array_key_exists($middleware, $this->aliases)) {
                     $middleware = $this->aliases[$middleware];
-                } elseif (class_exists($middleware)) {
-                    $middleware = [$middleware];
-                } else {
+                } elseif (!class_exists($middleware)) {
                     throw new RouterException(sprintf(
                         "No middleware groups were found with the name: '%s'.", $middleware
                     ), 500);
                 }
+            } elseif (is_callable($middleware)) {
+                $middleware = array($middleware);
             }
-            $middlewares = array_merge($middlewares, $middleware);
+            $middlewares = array_merge($middlewares, is_array($middleware) ? $middleware : array($middleware));
         }
         return array_values(array_unique($middlewares, SORT_REGULAR));
     }
