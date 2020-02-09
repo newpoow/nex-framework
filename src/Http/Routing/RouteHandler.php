@@ -21,6 +21,7 @@ use Nex\Standard\Injection\InjectorInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use Throwable;
 
 /**
  * Handler of the action defined in the access route.
@@ -54,9 +55,26 @@ class RouteHandler implements RequestHandlerInterface
      */
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
-        return $this->prepareResponse(
-            $this->injector->execute($this->getAction(), $request->getAttributes())
-        );
+        ob_start();
+        $level = ob_get_level();
+
+        try {
+            $response = $this->prepareResponse(
+                $this->injector->execute($this->getAction(), $request->getAttributes())
+            );
+
+            $content = '';
+            while (ob_get_level() >= $level) {
+                $content = ob_get_clean().$content;
+            }
+            $response->getBody()->write($content);
+            return $response;
+        } catch (Throwable $exception) {
+            while (ob_get_level() >= $level) {
+                ob_end_clean();
+            }
+            throw new RouterException($exception->getMessage(), 500, $exception);
+        }
     }
 
     /**
