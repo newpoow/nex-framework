@@ -102,16 +102,16 @@ class ServerRequestFactory implements ServerRequestFactoryInterface
             $files = array();
             foreach ($path as $key => $value) {
                 $files[$key] = $walker(
-                    $path[$key], $size[$key], $error[$key], $name[$key], $type[$key]
+                    $value, $size[$key], $error[$key], $name[$key], $type[$key]
                 );
             }
             return $files;
         };
 
         $files = array();
-        foreach ($_FILES as $field => $file) {
-            $files = $walker(
-                $file['tmp_name'], $file['size'], $file['error'], $file['name'], $file['type']
+        foreach ($_FILES as $field => $metadata) {
+            $files[$field] = $walker(
+                $metadata['tmp_name'], $metadata['size'], $metadata['error'], $metadata['name'], $metadata['type']
             );
         }
         return $files;
